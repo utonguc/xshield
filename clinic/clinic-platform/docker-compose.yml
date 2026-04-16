@@ -88,6 +88,16 @@ services:
     ports:
       - "3001:3001"
 
+  signed-landing:
+    build:
+      context: ../../signed-landing
+    container_name: signed_landing
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    ports:
+      - "3002:3002"
+
   nginx:
     image: nginx:stable
     container_name: clinic_nginx
@@ -96,6 +106,7 @@ services:
       - frontend
       - backend
       - xshield-web
+      - signed-landing
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
@@ -104,3 +115,8 @@ services:
 volumes:
   postgres_data:
   uploads_data:
+
+networks:
+  default:
+    name: xshield-net
+    external: true
