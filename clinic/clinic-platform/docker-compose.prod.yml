@@ -1,0 +1,75 @@
+version: "3.9"
+
+# ─── Production override ──────────────────────────────────────────────────────
+# Kullanım:
+#   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Gerekli adımlar:
+#   1. cp .env.prod.example .env.prod   → değerleri doldur
+#   2. ./scripts/gen-ssl.sh             → self-signed SSL sertifikası oluştur
+#   3. Yukarıdaki compose komutu ile başlat
+#
+# Zorunlu env değişkenleri (.env.prod):
+#   DB_PASSWORD, JWT_KEY
+#   SMTP_HOST, SMTP_PORT, SMTP_SSL, SMTP_USER, SMTP_PASS, SMTP_FROM
+#   PUBLIC_DOMAIN  (ör: eclinic.xshield.com.tr)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  db:
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD env var required}
+      POSTGRES_USER: clinicuser
+      POSTGRES_DB: clinicdb_prod
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    # Dışarıya port açma — sadece iç Docker network üzerinden erişilir
+    ports: !reset []
+
+  redis:
+    # Dışarıya port açma
+    ports: !reset []
+
+  backend:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # Tüm bağlantılar Docker iç network üzerinden (container ismiyle)
+      ConnectionStrings__DefaultConnection: >-
+        Host=db;Port=5432;Database=clinicdb_prod;Username=clinicuser;Password=${DB_PASSWORD}
+      Jwt__Key: ${JWT_KEY:?JWT_KEY env var required}
+      Jwt__Issuer: eclinic-xshield
+      Jwt__Audience: eclinic-users
+      Jwt__ExpireMinutes: ${JWT_EXPIRE_MINUTES:-480}
+      Smtp__Host: ${SMTP_HOST:?SMTP_HOST required}
+      Smtp__Port: ${SMTP_PORT:-587}
+      Smtp__UseSsl: ${SMTP_SSL:-true}
+      Smtp__UserName: ${SMTP_USER:?SMTP_USER required}
+      Smtp__Password: ${SMTP_PASS:?SMTP_PASS required}
+      Smtp__FromAddress: ${SMTP_FROM:?SMTP_FROM required}
+      Smtp__FromName: ${SMTP_FROM_NAME:-xShield e-Clinic}
+    # Dışarıya port açma — nginx üzerinden erişilir
+    ports: !reset []
+
+  frontend:
+    # Production: önce next build, sonra next start (dev server değil)
+    command: sh -c "npm run build && npm run start"
+    environment:
+      NODE_ENV: production
+      # API istekleri tarayıcıdan geldiği için public domain üzerinden
+      NEXT_PUBLIC_API_BASE_URL: https://${PUBLIC_DOMAIN:-eclinic.xshield.com.tr}/api
+      # Server-side Next.js API routes iç Docker network üzerinden backend'e bağlanır
+      API_BASE_URL: http://clinic_backend:8080/api
+      GROQ_API_KEY: ${GROQ_API_KEY:?GROQ_API_KEY required}
+    ports: !reset []
+
+  nginx:
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+
+volumes:
+  postgres_prod_data:
+    external: false

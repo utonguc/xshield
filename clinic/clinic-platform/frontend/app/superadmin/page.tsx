@@ -1,0 +1,611 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import AppShell from "@/components/AppShell";
+import RoleGuard from "@/components/RoleGuard";
+import { apiFetch } from "@/lib/api";
+import { btn, inp } from "@/lib/ui";
+import { fmtDate } from "@/lib/tz";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+type Clinic = {
+  id: string; name: string; city?: string; country?: string;
+  emailDomain?: string;
+  isActive: boolean; userCount: number; patientCount: number;
+  activeModules: string[]; createdAtUtc: string;
+};
+type Module = {
+  moduleCode: string; moduleLabel: string;
+  isActive: boolean; expiresAtUtc?: string;
+};
+type ClinicUser = {
+  id: string; fullName: string; userName: string; email: string;
+  isActive: boolean; roleName: string; createdAtUtc: string;
+};
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const ALL_MODULES = [
+  { code: "crm",           label: "CRM & Hasta Yönetimi" },
+  { code: "appointments",  label: "Randevu Yönetimi" },
+  { code: "doctors",       label: "Doktor Yönetimi" },
+  { code: "reports",       label: "Raporlama" },
+  { code: "finance",       label: "Finans & Faturalama" },
+  { code: "inventory",     label: "Stok Yönetimi" },
+  { code: "assets",        label: "Demirbaş Takibi" },
+  { code: "tasks",         label: "Görev Yönetimi" },
+  { code: "notifications", label: "Bildirim & SMS/Email" },
+  { code: "documents",     label: "Belge Yönetimi" },
+  { code: "surveys",       label: "Anket & Memnuniyet" },
+  { code: "whatsapp",      label: "WhatsApp Entegrasyonu" },
+];
+
+const card: React.CSSProperties = {
+  background: "var(--surface, #fff)", border: "1px solid #eaecf0",
+  borderRadius: 16, boxShadow: "0 1px 4px rgba(16,24,40,0.06)",
+};
+
+
+function expiryStatus(expiresAtUtc?: string) {
+  if (!expiresAtUtc) return { label: "Süresiz", color: "#059669", bg: "#f0fdf4" };
+  const diff = Math.ceil((new Date(expiresAtUtc).getTime() - Date.now()) / 86400000);
+  if (diff < 0)  return { label: "Süresi dolmuş", color: "#b42318", bg: "#fef3f2" };
+  if (diff <= 7) return { label: `${diff} gün kaldı`, color: "#d97706", bg: "#fffbeb" };
+  return { label: `${diff} gün kaldı`, color: "#059669", bg: "#f0fdf4" };
+}
+
+const emptyClinicForm = () => ({
+  name: "", city: "", country: "Türkiye", emailDomain: "",
+  adminFullName: "", adminUserName: "", adminEmail: "", adminPassword: "",
+  initialModules: ["crm","appointments","doctors","reports"] as string[],
+});
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+export default function SuperAdminPage() {
+  return (
+    <RoleGuard roles={["SuperAdmin"]}>
+      <SuperAdminPageInner />
+    </RoleGuard>
+  );
+}
+
+function SuperAdminPageInner() {
+  const [clinics,   setClinics]   = useState<Clinic[]>([]);
+  const [search,    setSearch]    = useState("");
+  const [filter,    setFilter]    = useState<"all"|"active"|"passive">("all");
+  const [selected,  setSelected]  = useState<Clinic | null>(null);
+  const [detailTab, setDetailTab] = useState<"general"|"modules"|"users">("general");
+  const [showCreate, setShowCreate] = useState(false);
+  const [message,   setMessage]   = useState("");
+  const [loading,   setLoading]   = useState(false);
+  const [form,      setForm]      = useState(emptyClinicForm());
+
+  const load = useCallback(async () => {
+    const res = await apiFetch("/superadmin/clinics");
+    if (!res.ok) { setMessage("Erişim reddedildi."); return; }
+    const data = await res.json();
+    setClinics(Array.isArray(data) ? data : []);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const filtered = clinics.filter(c => {
+    if (filter === "active"  && !c.isActive) return false;
+    if (filter === "passive" &&  c.isActive) return false;
+    if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  const selectClinic = (c: Clinic) => {
+    setSelected(c);
+    setDetailTab("general");
+  };
+
+  const createClinic = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await apiFetch("/superadmin/clinics", { method: "POST", body: JSON.stringify(form) });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.message ?? "Hata"); }
+      setShowCreate(false); setForm(emptyClinicForm());
+      setMessage("Klinik oluşturuldu."); await load();
+    } catch (err) { setMessage(err instanceof Error ? err.message : "Hata"); }
+    finally { setLoading(false); }
+  };
+
+  const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const toggleInitMod = (code: string) => setForm(p => ({
+    ...p,
+    initialModules: p.initialModules.includes(code)
+      ? p.initialModules.filter(m => m !== code)
+      : [...p.initialModules, code],
+  }));
+
+  return (
+    <AppShell title="SuperAdmin Paneli" description="Klinik, lisans ve kullanıcı yönetimi">
+
+      {message && (
+        <div style={{ padding: "10px 14px", borderRadius: 8, background: "#f0fdf4", color: "#059669", border: "1px solid #bbf7d0", marginBottom: 16, fontSize: 13, fontWeight: 600 }}
+          onClick={() => setMessage("")}>
+          ✓ {message}
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: selected ? "340px 1fr" : "1fr", gap: 16, alignItems: "start" }}>
+
+        {/* ── Sol: Klinik Listesi ─────────────────────────────────────────── */}
+        <div>
+          {/* Araç çubuğu */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+            <button onClick={() => setShowCreate(v => !v)} style={{
+              padding: "8px 14px", borderRadius: 10, border: "none",
+              background: "#7c3aed", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13,
+            }}>
+              {showCreate ? "✕ Kapat" : "+ Yeni Klinik"}
+            </button>
+            <div style={{ fontSize: 13, color: "#667085", padding: "8px 12px", background: "var(--surface-2, #f8fafc)", borderRadius: 10, border: "1px solid #eaecf0" }}>
+              {clinics.length} klinik · {clinics.filter(c => c.isActive).length} aktif
+            </div>
+          </div>
+
+          {/* Arama + filtre */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Klinik ara..." style={{ ...inp, flex: 1 }} />
+            <select value={filter} onChange={e => setFilter(e.target.value as typeof filter)}
+              style={{ ...inp, width: "auto", flex: "0 0 auto" }}>
+              <option value="all">Tümü</option>
+              <option value="active">Aktif</option>
+              <option value="passive">Pasif</option>
+            </select>
+          </div>
+
+          {/* Yeni klinik formu */}
+          {showCreate && (
+            <div style={{ ...card, padding: 18, marginBottom: 14, border: "1px solid #e9d5ff", background: "#faf5ff" }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "#6d28d9", marginBottom: 14 }}>Yeni Klinik</div>
+              <form onSubmit={createClinic} style={{ display: "grid", gap: 10 }}>
+                <input placeholder="Klinik adı *" value={form.name} onChange={e => f("name", e.target.value)} style={inp} required />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <input placeholder="Şehir" value={form.city} onChange={e => f("city", e.target.value)} style={inp} />
+                  <input placeholder="Ülke" value={form.country} onChange={e => f("country", e.target.value)} style={inp} />
+                </div>
+                <div>
+                  <input
+                    placeholder="E-posta domain (ör: klinik-a.com.tr)"
+                    value={form.emailDomain}
+                    onChange={e => f("emailDomain", e.target.value.trim().toLowerCase())}
+                    style={inp}
+                  />
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+                    Personel bu domain'deki e-postalarıyla giriş yapar. Sonradan da eklenebilir.
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#6d28d9", marginTop: 4 }}>Yönetici Hesabı</div>
+                <input placeholder="Ad Soyad *" value={form.adminFullName} onChange={e => f("adminFullName", e.target.value)} style={inp} required />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <input placeholder="Kullanıcı adı *" value={form.adminUserName} onChange={e => f("adminUserName", e.target.value)} style={inp} required />
+                  <input placeholder="E-posta" value={form.adminEmail} onChange={e => f("adminEmail", e.target.value)} style={inp} />
+                </div>
+                <input type="password" placeholder="Şifre * (min 6)" value={form.adminPassword} onChange={e => f("adminPassword", e.target.value)} style={inp} required minLength={6} />
+
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#6d28d9" }}>Başlangıç Modülleri</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {ALL_MODULES.map(m => {
+                    const on = form.initialModules.includes(m.code);
+                    return (
+                      <button key={m.code} type="button" onClick={() => toggleInitMod(m.code)}
+                        style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                          background: on ? "#7c3aed" : "#fff", color: on ? "#fff" : "#667085",
+                          border: `1px solid ${on ? "#7c3aed" : "#d0d5dd"}` }}>
+                        {m.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                  <button type="submit" disabled={loading} style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: "#7c3aed", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+                    {loading ? "Oluşturuluyor..." : "Oluştur"}
+                  </button>
+                  <button type="button" onClick={() => setShowCreate(false)} style={{ padding: "9px 14px", borderRadius: 10, border: "1px solid #d0d5dd", background: "var(--surface, #fff)", color: "var(--text-2, #344054)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+                    İptal
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Klinik listesi */}
+          <div style={{ display: "grid", gap: 8 }}>
+            {filtered.map(c => (
+              <div key={c.id} onClick={() => selectClinic(c)}
+                style={{ ...card, padding: 16, cursor: "pointer",
+                  borderLeft: selected?.id === c.id ? "4px solid #7c3aed" : "4px solid transparent",
+                  background: selected?.id === c.id ? "#faf5ff" : "#fff",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={e => { if (selected?.id !== c.id) e.currentTarget.style.background = "#f8fafc"; }}
+                onMouseLeave={e => { if (selected?.id !== c.id) e.currentTarget.style.background = "#fff"; }}>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text, #101828)" }}>{c.name}</div>
+                    <div style={{ fontSize: 12, color: "#667085", marginTop: 2 }}>
+                      {[c.city, c.country].filter(Boolean).join(", ") || "—"}
+                    </div>
+                    {c.emailDomain && (
+                      <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 2, fontWeight: 600 }}>
+                        @{c.emailDomain}
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
+                    background: c.isActive ? "#f0fdf4" : "#fef3f2",
+                    color: c.isActive ? "#059669" : "#b42318",
+                    border: `1px solid ${c.isActive ? "#bbf7d0" : "#fecaca"}` }}>
+                    {c.isActive ? "Aktif" : "Pasif"}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", gap: 12, marginTop: 10, fontSize: 11, color: "#94a3b8" }}>
+                  <span>👤 {c.userCount}</span>
+                  <span>♥ {c.patientCount}</span>
+                  <span>📦 {c.activeModules.length} modül</span>
+                  <span>🗓 {fmtDate(c.createdAtUtc)}</span>
+                </div>
+              </div>
+            ))}
+            {filtered.length === 0 && (
+              <div style={{ color: "#98a2b3", fontSize: 13, padding: 24, textAlign: "center" }}>Klinik bulunamadı.</div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Sağ: Klinik Detay ───────────────────────────────────────────── */}
+        {selected && (
+          <ClinicDetail
+            clinic={selected}
+            onClose={() => setSelected(null)}
+            onUpdated={async () => { await load(); }}
+            onMessage={setMessage}
+            tab={detailTab}
+            setTab={setDetailTab}
+          />
+        )}
+      </div>
+    </AppShell>
+  );
+}
+
+// ── Clinic Detail Panel ───────────────────────────────────────────────────────
+function ClinicDetail({ clinic, onClose, onUpdated, onMessage, tab, setTab }: {
+  clinic: Clinic;
+  onClose: () => void;
+  onUpdated: () => Promise<void>;
+  onMessage: (m: string) => void;
+  tab: "general" | "modules" | "users";
+  setTab: (t: "general" | "modules" | "users") => void;
+}) {
+  return (
+    <div style={{ ...card, overflow: "hidden" }}>
+      {/* Header */}
+      <div style={{ padding: "16px 20px", borderBottom: "1px solid #eaecf0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: 16 }}>{clinic.name}</div>
+          <div style={{ fontSize: 12, color: "#667085", marginTop: 2 }}>{clinic.id}</div>
+        </div>
+        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#667085" }}>✕</button>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", borderBottom: "1px solid #eaecf0", padding: "0 20px" }}>
+        {(["general","modules","users"] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)} style={{
+            padding: "12px 16px", border: "none", background: "none", cursor: "pointer",
+            fontSize: 13, fontWeight: tab === t ? 700 : 500,
+            color: tab === t ? "#7c3aed" : "#667085",
+            borderBottom: tab === t ? "2px solid #7c3aed" : "2px solid transparent",
+            marginBottom: -1,
+          }}>
+            {t === "general" ? "⚙ Genel" : t === "modules" ? "📦 Modüller" : "👤 Kullanıcılar"}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ padding: 20 }}>
+        {tab === "general"  && <GeneralTab  clinic={clinic} onUpdated={onUpdated} onMessage={onMessage} />}
+        {tab === "modules"  && <ModulesTab  clinicId={clinic.id} onMessage={onMessage} />}
+        {tab === "users"    && <UsersTab    clinicId={clinic.id} />}
+      </div>
+    </div>
+  );
+}
+
+// ── General Tab ───────────────────────────────────────────────────────────────
+function GeneralTab({ clinic, onUpdated, onMessage }: {
+  clinic: Clinic;
+  onUpdated: () => Promise<void>;
+  onMessage: (m: string) => void;
+}) {
+  const [name,        setName]        = useState(clinic.name);
+  const [city,        setCity]        = useState(clinic.city ?? "");
+  const [country,     setCountry]     = useState(clinic.country ?? "");
+  const [emailDomain, setEmailDomain] = useState(clinic.emailDomain ?? "");
+  const [isActive,    setIsActive]    = useState(clinic.isActive);
+  const [saving,      setSaving]      = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    const res = await apiFetch(`/superadmin/clinics/${clinic.id}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        name, city, country, isActive,
+        emailDomain: emailDomain.trim().toLowerCase() || null,
+      }),
+    });
+    setSaving(false);
+    if (res.ok) { onMessage("Klinik güncellendi."); await onUpdated(); }
+    else        { const d = await res.json().catch(() => ({})); onMessage(d.message ?? "Hata."); }
+  };
+
+  const statRow = (label: string, val: string | number) => (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f2f4f7", fontSize: 13 }}>
+      <span style={{ color: "#667085" }}>{label}</span>
+      <span style={{ fontWeight: 600, color: "var(--text, #101828)" }}>{val}</span>
+    </div>
+  );
+
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      {/* Düzenleme formu */}
+      <div style={{ display: "grid", gap: 12 }}>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-2, #344054)", display: "block", marginBottom: 6 }}>Klinik Adı *</label>
+          <input value={name} onChange={e => setName(e.target.value)} style={inp} />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-2, #344054)", display: "block", marginBottom: 6 }}>Şehir</label>
+            <input value={city} onChange={e => setCity(e.target.value)} style={inp} />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-2, #344054)", display: "block", marginBottom: 6 }}>Ülke</label>
+            <input value={country} onChange={e => setCountry(e.target.value)} style={inp} />
+          </div>
+        </div>
+
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-2, #344054)", display: "block", marginBottom: 6 }}>
+            E-posta Domain
+          </label>
+          <input
+            value={emailDomain}
+            onChange={e => setEmailDomain(e.target.value.trim().toLowerCase())}
+            placeholder="ör: klinik-a.com.tr"
+            style={inp}
+          />
+          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+            Personel bu domain'deki e-postalarıyla oturum açar.
+            {clinic.emailDomain && (
+              <span style={{ marginLeft: 6, color: "#059669", fontWeight: 600 }}>
+                Mevcut: {clinic.emailDomain}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2, #344054)" }}>Klinik Durumu</label>
+          <button onClick={() => setIsActive(v => !v)} style={{
+            padding: "6px 16px", borderRadius: 20, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13,
+            background: isActive ? "#059669" : "#dc2626",
+            color: "#fff", transition: "background 0.2s",
+          }}>
+            {isActive ? "● Aktif" : "● Pasif"}
+          </button>
+          <span style={{ fontSize: 12, color: "#98a2b3" }}>
+            {isActive ? "Klinik kullanıcıları giriş yapabilir" : "Klinik erişime kapalı"}
+          </span>
+        </div>
+
+        <button onClick={save} disabled={saving} style={{
+          padding: "10px 20px", borderRadius: 10, border: "none",
+          background: saving ? "#93c5fd" : "#7c3aed", color: "#fff",
+          fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", fontSize: 13, width: "fit-content",
+        }}>
+          {saving ? "Kaydediliyor..." : "💾 Değişiklikleri Kaydet"}
+        </button>
+      </div>
+
+      {/* İstatistikler */}
+      <div style={{ background: "var(--surface-2, #f8fafc)", borderRadius: 12, padding: "4px 16px" }}>
+        {statRow("Kullanıcı Sayısı", clinic.userCount)}
+        {statRow("Hasta Sayısı", clinic.patientCount)}
+        {statRow("Aktif Modül", clinic.activeModules.length)}
+        {statRow("Oluşturulma", fmtDate(clinic.createdAtUtc))}
+      </div>
+    </div>
+  );
+}
+
+// ── Modules Tab ───────────────────────────────────────────────────────────────
+function ModulesTab({ clinicId, onMessage }: { clinicId: string; onMessage: (m: string) => void }) {
+  const [modules,  setModules]  = useState<Module[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [expiries, setExpiries] = useState<Record<string, string>>({});
+  const [saving,   setSaving]   = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await apiFetch(`/superadmin/clinics/${clinicId}/modules`);
+    if (res.ok) {
+      const data: Module[] = await res.json();
+      setModules(data);
+      const init: Record<string, string> = {};
+      data.forEach(m => {
+        init[m.moduleCode] = m.expiresAtUtc ? m.expiresAtUtc.slice(0, 10) : "";
+      });
+      setExpiries(init);
+    }
+    setLoading(false);
+  }, [clinicId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const saveModule = async (code: string, isActive: boolean) => {
+    setSaving(code);
+    const expiresAt = expiries[code] ? new Date(expiries[code]).toISOString() : null;
+    await apiFetch("/superadmin/modules/toggle", {
+      method: "PUT",
+      body: JSON.stringify({ clinicId, moduleCode: code, isActive, expiresAtUtc: expiresAt }),
+    });
+    onMessage(`${code} modülü güncellendi.`);
+    await load();
+    setSaving(null);
+  };
+
+  const setAllModules = async (active: boolean) => {
+    for (const m of modules) {
+      await apiFetch("/superadmin/modules/toggle", {
+        method: "PUT",
+        body: JSON.stringify({ clinicId, moduleCode: m.moduleCode, isActive: active, expiresAtUtc: null }),
+      });
+    }
+    onMessage(active ? "Tüm modüller aktifleştirildi." : "Tüm modüller deaktif edildi.");
+    await load();
+  };
+
+  if (loading) return <div style={{ color: "#98a2b3", fontSize: 13 }}>Yükleniyor...</div>;
+
+  const activeCount = modules.filter(m => m.isActive).length;
+
+  return (
+    <div>
+      {/* Toplu işlem */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <span style={{ fontSize: 13, color: "#667085" }}>{activeCount} / {modules.length} modül aktif</span>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setAllModules(true)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #bbf7d0", background: "#f0fdf4", color: "#059669", fontWeight: 600, cursor: "pointer", fontSize: 12 }}>
+            Tümünü Aktifleştir
+          </button>
+          <button onClick={() => setAllModules(false)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #fecaca", background: "#fef3f2", color: "#b42318", fontWeight: 600, cursor: "pointer", fontSize: 12 }}>
+            Tümünü Kapat
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gap: 8 }}>
+        {modules.map(m => {
+          const es = expiryStatus(m.isActive ? m.expiresAtUtc : undefined);
+          const isSaving = saving === m.moduleCode;
+          return (
+            <div key={m.moduleCode} style={{
+              padding: "12px 14px", borderRadius: 12,
+              background: m.isActive ? "#faf5ff" : "#f8fafc",
+              border: `1px solid ${m.isActive ? "#e9d5ff" : "#eaecf0"}`,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                {/* Toggle */}
+                <button onClick={() => saveModule(m.moduleCode, !m.isActive)} disabled={isSaving}
+                  style={{
+                    width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
+                    background: m.isActive ? "#7c3aed" : "#d1d5db",
+                    position: "relative", flexShrink: 0, transition: "background 0.2s",
+                  }}>
+                  <span style={{
+                    position: "absolute", top: 3, width: 18, height: 18,
+                    borderRadius: "50%", background: "var(--surface, #fff)",
+                    left: m.isActive ? 23 : 3, transition: "left 0.2s",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                  }} />
+                </button>
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: m.isActive ? "#6d28d9" : "#374151" }}>
+                    {m.moduleLabel}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#94a3b8" }}>{m.moduleCode}</div>
+                </div>
+
+                {m.isActive && (
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: es.bg, color: es.color, flexShrink: 0 }}>
+                    {es.label}
+                  </span>
+                )}
+              </div>
+
+              {/* Süre seçici (sadece aktifse) */}
+              {m.isActive && (
+                <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: "#667085", flexShrink: 0 }}>Son Kullanım:</label>
+                  <input type="date" value={expiries[m.moduleCode] ?? ""}
+                    onChange={e => setExpiries(p => ({ ...p, [m.moduleCode]: e.target.value }))}
+                    min={new Date().toISOString().slice(0, 10)}
+                    style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e4e7ec", fontSize: 12, flex: 1 }} />
+                  <button onClick={() => setExpiries(p => ({ ...p, [m.moduleCode]: "" }))}
+                    style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e4e7ec", background: "var(--surface-2, #f8fafc)", color: "#667085", cursor: "pointer", fontSize: 11 }}>
+                    Süresiz
+                  </button>
+                  <button onClick={() => saveModule(m.moduleCode, true)} disabled={isSaving}
+                    style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "#7c3aed", color: "#fff", fontWeight: 700, cursor: isSaving ? "not-allowed" : "pointer", fontSize: 11 }}>
+                    {isSaving ? "..." : "Kaydet"}
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Users Tab ─────────────────────────────────────────────────────────────────
+function UsersTab({ clinicId }: { clinicId: string }) {
+  const [users,   setUsers]   = useState<ClinicUser[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch(`/superadmin/clinics/${clinicId}/users`)
+      .then(r => r.ok ? r.json() : [])
+      .then(d => { setUsers(Array.isArray(d) ? d : []); setLoading(false); });
+  }, [clinicId]);
+
+  const ROLE_COLORS: Record<string, string> = {
+    SuperAdmin: "#7c3aed", KlinikYonetici: "#1d4ed8",
+    Doktor: "#065f46", Resepsiyon: "#92400e",
+    Asistan: "#0e7490", Teknisyen: "#374151",
+  };
+
+  if (loading) return <div style={{ color: "#98a2b3", fontSize: 13 }}>Yükleniyor...</div>;
+  if (users.length === 0) return <div style={{ color: "#98a2b3", fontSize: 13, padding: 16, textAlign: "center" }}>Kullanıcı bulunamadı.</div>;
+
+  return (
+    <div style={{ display: "grid", gap: 8 }}>
+      {users.map(u => {
+        const rc = ROLE_COLORS[u.roleName] ?? "#374151";
+        return (
+          <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "var(--surface-2, #f8fafc)", borderRadius: 10, border: "1px solid #f2f4f7" }}>
+            <div style={{ width: 34, height: 34, borderRadius: "50%", background: rc, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 13, flexShrink: 0 }}>
+              {u.fullName.charAt(0).toUpperCase()}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text, #101828)" }}>{u.fullName}</div>
+              <div style={{ fontSize: 11, color: "#667085" }}>{u.userName} · {u.email}</div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: `${rc}18`, color: rc, border: `1px solid ${rc}30` }}>
+                {u.roleName}
+              </span>
+              <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
+                background: u.isActive ? "#f0fdf4" : "#fef3f2",
+                color: u.isActive ? "#059669" : "#b42318" }}>
+                {u.isActive ? "Aktif" : "Pasif"}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
