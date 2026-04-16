@@ -13,10 +13,186 @@ import {
   Stethoscope, Globe, BarChart3, Wallet, CheckSquare,
   FileText, Package, Wrench, ClipboardCheck, MessageCircle,
   Shield, Settings, ShieldCheck, Search, LogOut,
-  Sun, Moon, Bell, ChevronLeft, ChevronRight, X, Menu,
+  Sun, Moon, Bell, ChevronLeft, ChevronRight, X, Menu, HelpCircle,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect as _ue, useState as _us } from "react";
+
+// ── Announcement Banner ──────────────────────────────────────────────────────
+type Announcement = {
+  id: string; title: string; body: string; type: string;
+  createdAtUtc: string; isRead: boolean;
+};
+
+function AnnouncementBanner({ count, onRead }: { count: number; onRead: () => void }) {
+  const [open, setOpen] = _us(false);
+  const [items, setItems] = _us<Announcement[]>([]);
+  const [loading, setLoading] = _us(false);
+
+  const load = async () => {
+    setLoading(true);
+    const r = await apiFetch("/Platform/announcements");
+    if (r.ok) { const d = await r.json(); setItems(d.filter((a: Announcement) => !a.isRead)); }
+    setLoading(false);
+  };
+
+  const markRead = async (id: string) => {
+    await apiFetch(`/Platform/announcements/${id}/read`, { method: "POST" });
+    setItems(p => p.filter(a => a.id !== id));
+    if (items.length <= 1) { onRead(); setOpen(false); }
+  };
+
+  const TYPE_STYLE: Record<string, { bg: string; border: string; color: string; icon: string }> = {
+    info:    { bg: "#eff8ff", border: "#bfdbfe", color: "#1d4ed8", icon: "ℹ" },
+    success: { bg: "#f0fdf4", border: "#bbf7d0", color: "#059669", icon: "✓" },
+    warning: { bg: "#fffbeb", border: "#fde68a", color: "#d97706", icon: "⚠" },
+    error:   { bg: "#fef3f2", border: "#fecaca", color: "#b42318", icon: "!" },
+  };
+
+  return (
+    <>
+      <div style={{
+        background: "#eff8ff", borderBottom: "1px solid #bfdbfe",
+        padding: "8px 20px", display: "flex", alignItems: "center",
+        justifyContent: "space-between", gap: 12, flexWrap: "wrap",
+      }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#1d4ed8" }}>
+          📢 {count} yeni platform duyurusu var
+        </span>
+        <button onClick={() => { setOpen(true); load(); }} style={{
+          fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 8,
+          background: "#1d4ed8", color: "#fff", border: "none", cursor: "pointer",
+        }}>Görüntüle →</button>
+      </div>
+
+      {open && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 300,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "var(--surface, #fff)", borderRadius: 20, width: "100%", maxWidth: 560,
+            maxHeight: "80vh", overflow: "auto", padding: 28 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ fontWeight: 800, fontSize: 18 }}>Platform Duyuruları</div>
+              <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#64748b" }}>✕</button>
+            </div>
+            {loading ? (
+              <div style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>Yükleniyor...</div>
+            ) : items.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>Tüm duyurular okundu.</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {items.map(a => {
+                  const s = TYPE_STYLE[a.type] ?? TYPE_STYLE.info;
+                  return (
+                    <div key={a.id} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 14, padding: 16 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                          <span style={{ fontSize: 18, color: s.color, flexShrink: 0 }}>{s.icon}</span>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: s.color }}>{a.title}</div>
+                            <div style={{ fontSize: 13, color: "#374151", marginTop: 4, lineHeight: 1.5 }}>{a.body}</div>
+                            <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 6 }}>
+                              {new Date(a.createdAtUtc).toLocaleDateString("tr-TR")}
+                            </div>
+                          </div>
+                        </div>
+                        <button onClick={() => markRead(a.id)} style={{
+                          padding: "4px 10px", borderRadius: 6, border: `1px solid ${s.border}`,
+                          background: "rgba(255,255,255,0.6)", color: s.color, fontSize: 11,
+                          fontWeight: 600, cursor: "pointer", flexShrink: 0,
+                        }}>Okundu</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ── Support Modal ─────────────────────────────────────────────────────────────
+function SupportModal({ pageUrl, onClose }: { pageUrl: string; onClose: () => void }) {
+  const [subject, setSubject] = _us("");
+  const [body,    setBody]    = _us("");
+  const [sending, setSending] = _us(false);
+  const [sent,    setSent]    = _us(false);
+  const [error,   setError]   = _us("");
+
+  const send = async () => {
+    if (!subject.trim()) { setError("Konu zorunlu."); return; }
+    if (!body.trim())    { setError("Mesaj zorunlu."); return; }
+    setSending(true);
+    const r = await apiFetch("/Platform/support", {
+      method: "POST",
+      body: JSON.stringify({ subject: subject.trim(), body: body.trim(), pageUrl }),
+    });
+    setSending(false);
+    if (r.ok) { setSent(true); }
+    else { const d = await r.json().catch(() => ({})); setError(d.message ?? "Hata oluştu."); }
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 300,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ background: "var(--surface, #fff)", borderRadius: 20, width: "100%", maxWidth: 500, padding: 28 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 18 }}>Destek Talebi</div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>xShield ekibi size yardımcı olacak</div>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#64748b" }}>✕</button>
+        </div>
+
+        {sent ? (
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: "#059669", marginBottom: 8 }}>Talebiniz iletildi!</div>
+            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>En kısa sürede size geri dönüş yapacağız.</div>
+            <button onClick={onClose} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "#1d4ed8", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Kapat</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {error && (
+              <div style={{ background: "#fef3f2", color: "#b42318", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 12px", fontSize: 13 }}>{error}</div>
+            )}
+
+            <div style={{ background: "#f8fafc", border: "1px solid #eaecf0", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#64748b" }}>
+              📍 Bulunduğunuz sayfa: <span style={{ fontWeight: 600, color: "#374151" }}>{pageUrl}</span>
+            </div>
+
+            <input
+              value={subject} onChange={e => setSubject(e.target.value)}
+              placeholder="Konu *"
+              style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e4e7ec", fontSize: 14 }}
+            />
+            <textarea
+              value={body} onChange={e => setBody(e.target.value)}
+              placeholder="Yaşadığınız sorunu veya sorunuzu detaylı açıklayın *"
+              rows={5}
+              style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e4e7ec", fontSize: 13, resize: "vertical" }}
+            />
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button onClick={onClose} style={{ padding: "10px 20px", borderRadius: 10, border: "1px solid #e4e7ec", background: "var(--surface-2, #f8fafc)", fontWeight: 600, fontSize: 13, cursor: "pointer", color: "var(--text-2, #344054)" }}>
+                İptal
+              </button>
+              <button onClick={send} disabled={sending} style={{
+                padding: "10px 24px", borderRadius: 10, border: "none",
+                background: sending ? "#93c5fd" : "#1d4ed8", color: "#fff",
+                fontWeight: 700, fontSize: 13, cursor: sending ? "not-allowed" : "pointer",
+              }}>
+                {sending ? "Gönderiliyor..." : "Gönder"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function TrialBanner() {
   const [days, setDays] = _us<number | null>(null);
@@ -148,6 +324,9 @@ export default function AppShell({
   const [showNotifs,  setShowNotifs]  = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
 
+  const [annCount,     setAnnCount]     = useState(0);
+  const [showSupport,  setShowSupport]  = useState(false);
+
   /* ── Data loading ── */
   useEffect(() => {
     apiFetch("/Auth/me").then(r => r.ok ? r.json() : null).then(d => {
@@ -169,6 +348,12 @@ export default function AppShell({
     };
     loadPending();
     const timer = setInterval(loadPending, 60000);
+
+    apiFetch("/Platform/announcements/unread-count")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setAnnCount(d.count ?? 0); })
+      .catch(() => {});
+
     return () => clearInterval(timer);
   }, []);
 
@@ -494,6 +679,16 @@ export default function AppShell({
               {isDark ? <Sun size={16} color="#fbbf24" /> : <Moon size={16} color="#64748b" />}
             </button>
 
+            {/* Support button */}
+            <button onClick={() => setShowSupport(true)} title="Destek Talebi" style={{
+              width: 40, height: 40, borderRadius: 10,
+              border: "1px solid #e4e7ec", background: "var(--surface, #fff)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", flexShrink: 0,
+            }}>
+              <HelpCircle size={16} color="#64748b" />
+            </button>
+
             {/* Notifications */}
             <div ref={bellRef} style={{ position: "relative" }}>
               <button
@@ -627,6 +822,11 @@ export default function AppShell({
         {/* Trial warning banner */}
         <TrialBanner />
 
+        {/* Platform duyuru banner */}
+        {annCount > 0 && (
+          <AnnouncementBanner count={annCount} onRead={() => setAnnCount(0)} />
+        )}
+
         {/* Page content */}
         <main style={{
           flex: 1, padding: isMobile ? 16 : 28, overflowY: "auto",
@@ -659,6 +859,10 @@ export default function AppShell({
       </div>
 
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      {showSupport && (
+        <SupportModal pageUrl={pathname} onClose={() => setShowSupport(false)} />
+      )}
 
       {/* Bottom navigation (mobile) */}
       {isMobile && (

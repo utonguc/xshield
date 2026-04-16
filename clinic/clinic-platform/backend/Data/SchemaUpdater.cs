@@ -266,5 +266,56 @@ public static class SchemaUpdater
         );
         CREATE INDEX IF NOT EXISTS ix_surveyanswers_response ON "SurveyAnswers"("ResponseId");
 
+        -- TABLE: PlatformAnnouncements (SuperAdmin → klinikler duyuru)
+        CREATE TABLE IF NOT EXISTS "PlatformAnnouncements" (
+            "Id"           uuid        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+            "Title"        text        NOT NULL,
+            "Body"         text        NOT NULL,
+            "Type"         varchar(20) NOT NULL DEFAULT 'info',
+            "IsPublished"  boolean     NOT NULL DEFAULT true,
+            "ExpiresAtUtc" timestamptz,
+            "CreatedAtUtc" timestamptz NOT NULL DEFAULT now()
+        );
+        CREATE INDEX IF NOT EXISTS ix_platformann_published ON "PlatformAnnouncements"("IsPublished");
+
+        -- TABLE: PlatformAnnouncementReads (okundu takibi)
+        CREATE TABLE IF NOT EXISTS "PlatformAnnouncementReads" (
+            "Id"             uuid        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+            "AnnouncementId" uuid        NOT NULL,
+            "ClinicId"       uuid        NOT NULL,
+            "ReadAtUtc"      timestamptz NOT NULL DEFAULT now(),
+            CONSTRAINT fk_annread_announcement
+                FOREIGN KEY ("AnnouncementId") REFERENCES "PlatformAnnouncements"("Id") ON DELETE CASCADE
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS ix_annread_unique ON "PlatformAnnouncementReads"("AnnouncementId", "ClinicId");
+
+        -- TABLE: SupportTickets (klinik → SuperAdmin destek)
+        CREATE TABLE IF NOT EXISTS "SupportTickets" (
+            "Id"           uuid        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+            "ClinicId"     uuid        NOT NULL,
+            "ClinicName"   text        NOT NULL,
+            "Subject"      text        NOT NULL,
+            "Body"         text        NOT NULL,
+            "PageUrl"      text,
+            "Status"       varchar(20) NOT NULL DEFAULT 'Open',
+            "CreatedAtUtc" timestamptz NOT NULL DEFAULT now(),
+            "UpdatedAtUtc" timestamptz NOT NULL DEFAULT now()
+        );
+        CREATE INDEX IF NOT EXISTS ix_supporttickets_clinic  ON "SupportTickets"("ClinicId");
+        CREATE INDEX IF NOT EXISTS ix_supporttickets_status  ON "SupportTickets"("Status");
+
+        -- TABLE: SupportTicketReplies
+        CREATE TABLE IF NOT EXISTS "SupportTicketReplies" (
+            "Id"           uuid        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+            "TicketId"     uuid        NOT NULL,
+            "Body"         text        NOT NULL,
+            "IsFromAdmin"  boolean     NOT NULL DEFAULT false,
+            "AuthorName"   text        NOT NULL,
+            "CreatedAtUtc" timestamptz NOT NULL DEFAULT now(),
+            CONSTRAINT fk_ticketreply_ticket
+                FOREIGN KEY ("TicketId") REFERENCES "SupportTickets"("Id") ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS ix_ticketreplies_ticket ON "SupportTicketReplies"("TicketId");
+
         """;
 }

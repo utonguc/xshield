@@ -861,6 +861,73 @@ public class InvoiceResponse
     public List<InvoiceItemResponse> Items { get; set; } = new();
 }
 
+// ── Platform Duyuruları ───────────────────────────────────────────────────────
+
+public class CreateAnnouncementRequest
+{
+    public string    Title        { get; set; } = string.Empty;
+    public string    Body         { get; set; } = string.Empty;
+    public string    Type         { get; set; } = "info";
+    public bool      IsPublished  { get; set; } = true;
+    public DateTime? ExpiresAtUtc { get; set; }
+}
+
+public class AnnouncementResponse
+{
+    public Guid      Id           { get; set; }
+    public string    Title        { get; set; } = string.Empty;
+    public string    Body         { get; set; } = string.Empty;
+    public string    Type         { get; set; } = string.Empty;
+    public bool      IsPublished  { get; set; }
+    public DateTime? ExpiresAtUtc { get; set; }
+    public DateTime  CreatedAtUtc { get; set; }
+    public int       ReadCount    { get; set; }
+    public bool      IsRead       { get; set; }  // klinik perspektifinden
+}
+
+// ── Destek Talepleri ──────────────────────────────────────────────────────────
+
+public class CreateSupportTicketRequest
+{
+    public string  Subject { get; set; } = string.Empty;
+    public string  Body    { get; set; } = string.Empty;
+    public string? PageUrl { get; set; }
+}
+
+public class SupportTicketReplyRequest
+{
+    public string Body { get; set; } = string.Empty;
+}
+
+public class UpdateTicketStatusRequest
+{
+    public string Status { get; set; } = string.Empty;
+}
+
+public class SupportTicketReplyResponse
+{
+    public Guid     Id           { get; set; }
+    public string   Body         { get; set; } = string.Empty;
+    public bool     IsFromAdmin  { get; set; }
+    public string   AuthorName   { get; set; } = string.Empty;
+    public DateTime CreatedAtUtc { get; set; }
+}
+
+public class SupportTicketResponse
+{
+    public Guid     Id           { get; set; }
+    public Guid     ClinicId     { get; set; }
+    public string   ClinicName   { get; set; } = string.Empty;
+    public string   Subject      { get; set; } = string.Empty;
+    public string   Body         { get; set; } = string.Empty;
+    public string?  PageUrl      { get; set; }
+    public string   Status       { get; set; } = string.Empty;
+    public DateTime CreatedAtUtc { get; set; }
+    public DateTime UpdatedAtUtc { get; set; }
+    public int      ReplyCount   { get; set; }
+    public List<SupportTicketReplyResponse> Replies { get; set; } = new();
+}
+
 // ── Shared ────────────────────────────────────────────────────────────────────
 
 public class PagedResult<T>

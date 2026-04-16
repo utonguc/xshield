@@ -6,6 +6,7 @@ import RoleGuard from "@/components/RoleGuard";
 import { apiFetch } from "@/lib/api";
 import { btn, inp } from "@/lib/ui";
 import { fmtDate } from "@/lib/tz";
+import { APP_VERSION } from "@/lib/version";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Clinic = {
@@ -69,6 +70,8 @@ export default function SuperAdminPage() {
 }
 
 function SuperAdminPageInner() {
+  const [topTab, setTopTab] = useState<"clinics"|"announcements"|"support">("clinics");
+
   const [clinics,   setClinics]   = useState<Clinic[]>([]);
   const [search,    setSearch]    = useState("");
   const [filter,    setFilter]    = useState<"all"|"active"|"passive">("all");
@@ -123,6 +126,28 @@ function SuperAdminPageInner() {
   return (
     <AppShell title="SuperAdmin Paneli" description="Klinik, lisans ve kullanıcı yönetimi">
 
+      {/* Versiyon + üst tab nav */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", gap: 4, background: "var(--surface-2, #f8fafc)", borderRadius: 12, padding: 4, border: "1px solid #eaecf0" }}>
+          {([
+            { key: "clinics",       label: "🏥 Klinikler" },
+            { key: "announcements", label: "📢 Duyurular" },
+            { key: "support",       label: "🎫 Destek Talepleri" },
+          ] as const).map(t => (
+            <button key={t.key} onClick={() => setTopTab(t.key)} style={{
+              padding: "8px 18px", borderRadius: 8, border: "none", cursor: "pointer",
+              fontSize: 13, fontWeight: topTab === t.key ? 700 : 500,
+              background: topTab === t.key ? "#7c3aed" : "transparent",
+              color: topTab === t.key ? "#fff" : "#64748b",
+              transition: "all 0.15s",
+            }}>{t.label}</button>
+          ))}
+        </div>
+        <div style={{ fontSize: 12, color: "#94a3b8", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 12px", fontWeight: 700 }}>
+          v{APP_VERSION}
+        </div>
+      </div>
+
       {message && (
         <div style={{ padding: "10px 14px", borderRadius: 8, background: "#f0fdf4", color: "#059669", border: "1px solid #bbf7d0", marginBottom: 16, fontSize: 13, fontWeight: 600 }}
           onClick={() => setMessage("")}>
@@ -130,7 +155,10 @@ function SuperAdminPageInner() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: selected ? "340px 1fr" : "1fr", gap: 16, alignItems: "start" }}>
+      {topTab === "announcements" && <AnnouncementsTab />}
+      {topTab === "support"       && <SupportTab />}
+
+      {topTab === "clinics" && <div style={{ display: "grid", gridTemplateColumns: selected ? "340px 1fr" : "1fr", gap: 16, alignItems: "start" }}>
 
         {/* ── Sol: Klinik Listesi ─────────────────────────────────────────── */}
         <div>
@@ -272,8 +300,350 @@ function SuperAdminPageInner() {
             setTab={setDetailTab}
           />
         )}
-      </div>
+      </div>}
     </AppShell>
+  );
+}
+
+// ── Announcements Tab ─────────────────────────────────────────────────────────
+type Announcement = {
+  id: string; title: string; body: string; type: string;
+  isPublished: boolean; expiresAtUtc?: string;
+  createdAtUtc: string; readCount: number;
+};
+
+function AnnouncementsTab() {
+  const [items,    setItems]    = useState<Announcement[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [form,     setForm]     = useState({ title: "", body: "", type: "info", isPublished: true, expiresAtUtc: "" });
+  const [saving,   setSaving]   = useState(false);
+  const [error,    setError]    = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const r = await apiFetch("/superadmin/announcements");
+    if (r.ok) setItems(await r.json());
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const save = async () => {
+    if (!form.title.trim()) { setError("Başlık zorunlu."); return; }
+    setSaving(true);
+    const r = await apiFetch("/superadmin/announcements", {
+      method: "POST",
+      body: JSON.stringify({ ...form, expiresAtUtc: form.expiresAtUtc ? new Date(form.expiresAtUtc).toISOString() : null }),
+    });
+    setSaving(false);
+    if (r.ok) { setShowForm(false); setForm({ title: "", body: "", type: "info", isPublished: true, expiresAtUtc: "" }); load(); }
+    else { const d = await r.json().catch(() => ({})); setError(d.message ?? "Hata."); }
+  };
+
+  const toggle = async (id: string) => {
+    await apiFetch(`/superadmin/announcements/${id}/publish`, { method: "PATCH" });
+    load();
+  };
+
+  const del = async (id: string) => {
+    if (!confirm("Duyuru silinsin mi?")) return;
+    await apiFetch(`/superadmin/announcements/${id}`, { method: "DELETE" });
+    load();
+  };
+
+  const TYPE_OPTS = [
+    { value: "info",    label: "Bilgi (mavi)" },
+    { value: "success", label: "Başarı (yeşil)" },
+    { value: "warning", label: "Uyarı (sarı)" },
+    { value: "error",   label: "Kritik (kırmızı)" },
+  ];
+
+  const TYPE_COLOR: Record<string, { color: string; bg: string }> = {
+    info:    { color: "#1d4ed8", bg: "#eff8ff" },
+    success: { color: "#059669", bg: "#f0fdf4" },
+    warning: { color: "#d97706", bg: "#fffbeb" },
+    error:   { color: "#b42318", bg: "#fef3f2" },
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, color: "#64748b" }}>{items.length} duyuru</div>
+        <button onClick={() => setShowForm(v => !v)} style={{
+          padding: "9px 18px", borderRadius: 10, border: "none",
+          background: "#7c3aed", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13,
+        }}>
+          {showForm ? "✕ Kapat" : "+ Yeni Duyuru"}
+        </button>
+      </div>
+
+      {showForm && (
+        <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 14, padding: 20, marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "#6d28d9", marginBottom: 14 }}>Yeni Duyuru</div>
+          {error && <div style={{ background: "#fef3f2", color: "#b42318", borderRadius: 8, padding: "8px 12px", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+              placeholder="Başlık *" style={inp} />
+            <textarea value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))}
+              placeholder="Duyuru metni" rows={4}
+              style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #e4e7ec", fontSize: 13, resize: "vertical" }} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#344054", display: "block", marginBottom: 4 }}>Tür</label>
+                <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))} style={inp}>
+                  {TYPE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#344054", display: "block", marginBottom: 4 }}>Son Tarih</label>
+                <input type="date" value={form.expiresAtUtc} onChange={e => setForm(p => ({ ...p, expiresAtUtc: e.target.value }))} style={inp} />
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 2 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                  <input type="checkbox" checked={form.isPublished} onChange={e => setForm(p => ({ ...p, isPublished: e.target.checked }))} />
+                  Hemen Yayınla
+                </label>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={save} disabled={saving} style={{
+                padding: "9px 18px", borderRadius: 10, border: "none", background: "#7c3aed", color: "#fff",
+                fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", fontSize: 13,
+              }}>{saving ? "Kaydediliyor..." : "Oluştur"}</button>
+              <button onClick={() => setShowForm(false)} style={{ padding: "9px 14px", borderRadius: 10, border: "1px solid #d0d5dd", background: "var(--surface, #fff)", color: "var(--text-2, #344054)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>İptal</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 40, color: "#94a3b8" }}>Yükleniyor...</div>
+      ) : items.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 40, color: "#94a3b8" }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>📢</div>
+          Henüz duyuru yok
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {items.map(a => {
+            const s = TYPE_COLOR[a.type] ?? TYPE_COLOR.info;
+            return (
+              <div key={a.id} style={{ background: "var(--surface, #fff)", border: "1px solid #eaecf0", borderRadius: 14, padding: 16, borderLeft: `4px solid ${s.color}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text, #101828)" }}>{a.title}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: s.bg, color: s.color }}>{a.type}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
+                        background: a.isPublished ? "#f0fdf4" : "#f1f5f9",
+                        color: a.isPublished ? "#059669" : "#64748b" }}>
+                        {a.isPublished ? "Yayında" : "Taslak"}
+                      </span>
+                    </div>
+                    {a.body && <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.5 }}>{a.body}</div>}
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 6, display: "flex", gap: 12 }}>
+                      <span>{fmtDate(a.createdAtUtc)}</span>
+                      <span>👁 {a.readCount} klinik okudu</span>
+                      {a.expiresAtUtc && <span>Son: {fmtDate(a.expiresAtUtc)}</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    <button onClick={() => toggle(a.id)} style={{
+                      padding: "5px 10px", borderRadius: 8, border: "1px solid #e4e7ec",
+                      background: "var(--surface-2, #f8fafc)", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                      color: a.isPublished ? "#b42318" : "#059669",
+                    }}>{a.isPublished ? "Gizle" : "Yayınla"}</button>
+                    <button onClick={() => del(a.id)} style={{
+                      padding: "5px 10px", borderRadius: 8, border: "none",
+                      background: "#fef3f2", color: "#b42318", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                    }}>Sil</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Support Tab ───────────────────────────────────────────────────────────────
+type Ticket = {
+  id: string; clinicId: string; clinicName: string;
+  subject: string; body: string; pageUrl?: string; status: string;
+  createdAtUtc: string; updatedAtUtc: string; replyCount: number;
+  replies: { id: string; body: string; isFromAdmin: boolean; authorName: string; createdAtUtc: string }[];
+};
+
+function SupportTab() {
+  const [tickets,  setTickets]  = useState<Ticket[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [selected, setSelected] = useState<Ticket | null>(null);
+  const [filter,   setFilter]   = useState("Open");
+  const [reply,    setReply]    = useState("");
+  const [sending,  setSending]  = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const r = await apiFetch(`/superadmin/support?status=${filter}`);
+    if (r.ok) setTickets(await r.json());
+    setLoading(false);
+  }, [filter]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const sendReply = async () => {
+    if (!reply.trim() || !selected) return;
+    setSending(true);
+    await apiFetch(`/superadmin/support/${selected.id}/reply`, {
+      method: "POST", body: JSON.stringify({ body: reply.trim() }),
+    });
+    setSending(false);
+    setReply("");
+    await load();
+    const r = await apiFetch(`/superadmin/support`);
+    if (r.ok) {
+      const all: Ticket[] = await r.json();
+      const updated = all.find(t => t.id === selected.id);
+      if (updated) setSelected(updated);
+    }
+  };
+
+  const updateStatus = async (id: string, status: string) => {
+    await apiFetch(`/superadmin/support/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+    load();
+    if (selected?.id === id) setSelected(p => p ? { ...p, status } : null);
+  };
+
+  const STATUS_STYLE: Record<string, { color: string; bg: string; label: string }> = {
+    Open:       { color: "#b42318", bg: "#fef3f2", label: "Açık" },
+    InProgress: { color: "#d97706", bg: "#fffbeb", label: "İşlemde" },
+    Resolved:   { color: "#059669", bg: "#f0fdf4", label: "Çözüldü" },
+  };
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: selected ? "320px 1fr" : "1fr", gap: 16, alignItems: "start" }}>
+      {/* Sol: ticket listesi */}
+      <div>
+        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+          {["Open","InProgress","Resolved"].map(s => {
+            const st = STATUS_STYLE[s];
+            return (
+              <button key={s} onClick={() => setFilter(s)} style={{
+                padding: "6px 12px", borderRadius: 8, border: `1px solid ${filter === s ? st.color : "#e4e7ec"}`,
+                background: filter === s ? st.bg : "var(--surface, #fff)",
+                color: filter === s ? st.color : "#64748b",
+                fontWeight: filter === s ? 700 : 500, fontSize: 12, cursor: "pointer",
+              }}>{st.label}</button>
+            );
+          })}
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign: "center", padding: 40, color: "#94a3b8" }}>Yükleniyor...</div>
+        ) : tickets.length === 0 ? (
+          <div style={{ textAlign: "center", padding: 40, color: "#94a3b8" }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>🎫</div>
+            Talep yok
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {tickets.map(t => {
+              const st = STATUS_STYLE[t.status] ?? STATUS_STYLE.Open;
+              return (
+                <div key={t.id} onClick={() => setSelected(t)} style={{
+                  background: "var(--surface, #fff)", border: "1px solid",
+                  borderColor: selected?.id === t.id ? "#7c3aed" : "#eaecf0",
+                  borderRadius: 12, padding: 14, cursor: "pointer",
+                  boxShadow: selected?.id === t.id ? "0 0 0 3px #7c3aed22" : "none",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text, #101828)" }}>{t.subject}</div>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 999, background: st.bg, color: st.color, flexShrink: 0 }}>{st.label}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: "#7c3aed", fontWeight: 600, marginTop: 2 }}>{t.clinicName}</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4, display: "flex", gap: 10 }}>
+                    <span>{fmtDate(t.createdAtUtc)}</span>
+                    {t.pageUrl && <span>📍 {t.pageUrl.replace(/https?:\/\/[^/]+/, "")}</span>}
+                    {t.replyCount > 0 && <span>💬 {t.replyCount}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Sağ: ticket detay */}
+      {selected && (
+        <div style={{ background: "var(--surface, #fff)", border: "1px solid #eaecf0", borderRadius: 16, overflow: "hidden" }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #f2f4f7", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: "var(--text, #101828)" }}>{selected.subject}</div>
+              <div style={{ fontSize: 12, color: "#7c3aed", fontWeight: 600, marginTop: 2 }}>{selected.clinicName}</div>
+              {selected.pageUrl && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>📍 {selected.pageUrl}</div>}
+            </div>
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              {["Open","InProgress","Resolved"].map(s => (
+                <button key={s} onClick={() => updateStatus(selected.id, s)}
+                  disabled={selected.status === s}
+                  style={{
+                    padding: "4px 10px", borderRadius: 8, border: "1px solid #e4e7ec",
+                    background: selected.status === s ? "#7c3aed" : "var(--surface-2, #f8fafc)",
+                    color: selected.status === s ? "#fff" : "#64748b",
+                    fontSize: 11, fontWeight: 600, cursor: selected.status === s ? "default" : "pointer",
+                  }}>{STATUS_STYLE[s].label}</button>
+              ))}
+              <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: 18 }}>✕</button>
+            </div>
+          </div>
+
+          <div style={{ padding: 20, maxHeight: 400, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* İlk mesaj */}
+            <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Klinik mesajı · {fmtDate(selected.createdAtUtc)}</div>
+              <div style={{ fontSize: 13, color: "var(--text, #101828)", lineHeight: 1.5 }}>{selected.body}</div>
+            </div>
+            {/* Yanıtlar */}
+            {selected.replies.map(r => (
+              <div key={r.id} style={{
+                background: r.isFromAdmin ? "#eff8ff" : "#f8fafc",
+                borderRadius: 12, padding: 14,
+                marginLeft: r.isFromAdmin ? 20 : 0,
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: r.isFromAdmin ? "#1d4ed8" : "#64748b", marginBottom: 6 }}>
+                  {r.authorName} · {fmtDate(r.createdAtUtc)}
+                  {r.isFromAdmin && <span style={{ marginLeft: 6, fontSize: 10, background: "#bfdbfe", color: "#1d4ed8", padding: "1px 6px", borderRadius: 999 }}>Admin</span>}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text, #101828)", lineHeight: 1.5 }}>{r.body}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Yanıt formu */}
+          {selected.status !== "Resolved" && (
+            <div style={{ padding: "12px 20px", borderTop: "1px solid #f2f4f7" }}>
+              <textarea value={reply} onChange={e => setReply(e.target.value)}
+                placeholder="Yanıt yaz..."
+                rows={3}
+                style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid #e4e7ec", fontSize: 13, resize: "vertical", boxSizing: "border-box" }} />
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                <button onClick={sendReply} disabled={sending || !reply.trim()} style={{
+                  padding: "9px 20px", borderRadius: 10, border: "none",
+                  background: !reply.trim() ? "#e2e8f0" : "#1d4ed8",
+                  color: !reply.trim() ? "#94a3b8" : "#fff",
+                  fontWeight: 700, fontSize: 13, cursor: reply.trim() ? "pointer" : "not-allowed",
+                }}>
+                  {sending ? "Gönderiliyor..." : "Yanıtla"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

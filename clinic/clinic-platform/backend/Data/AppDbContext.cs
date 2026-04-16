@@ -38,6 +38,10 @@ public class AppDbContext : DbContext
     public DbSet<SurveyAnswer>  SurveyAnswers  => Set<SurveyAnswer>();
     public DbSet<AuditLog>      AuditLogs      => Set<AuditLog>();
     public DbSet<PatientAccount> PatientAccounts => Set<PatientAccount>();
+    public DbSet<PlatformAnnouncement>     PlatformAnnouncements     => Set<PlatformAnnouncement>();
+    public DbSet<PlatformAnnouncementRead> PlatformAnnouncementReads => Set<PlatformAnnouncementRead>();
+    public DbSet<SupportTicket>            SupportTickets            => Set<SupportTicket>();
+    public DbSet<SupportTicketReply>       SupportTicketReplies      => Set<SupportTicketReply>();
 
     protected override void OnModelCreating(ModelBuilder m)
     {
@@ -424,6 +428,43 @@ public class AppDbContext : DbContext
             e.HasOne(x => x.Question).WithMany(x => x.Answers)
                 .HasForeignKey(x => x.QuestionId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => x.ResponseId);
+        });
+
+        // ── PlatformAnnouncements ─────────────────────────────────────────────
+        m.Entity<PlatformAnnouncement>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Title).HasMaxLength(300).IsRequired();
+            e.Property(x => x.Type).HasMaxLength(20).IsRequired().HasDefaultValue("info");
+            e.HasMany(x => x.Reads).WithOne(x => x.Announcement)
+                .HasForeignKey(x => x.AnnouncementId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.IsPublished);
+        });
+
+        m.Entity<PlatformAnnouncementRead>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.AnnouncementId, x.ClinicId }).IsUnique();
+        });
+
+        // ── SupportTickets ────────────────────────────────────────────────────
+        m.Entity<SupportTicket>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Subject).HasMaxLength(300).IsRequired();
+            e.Property(x => x.ClinicName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Status).HasMaxLength(20).IsRequired().HasDefaultValue("Open");
+            e.HasMany(x => x.Replies).WithOne(x => x.Ticket)
+                .HasForeignKey(x => x.TicketId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.ClinicId);
+            e.HasIndex(x => x.Status);
+        });
+
+        m.Entity<SupportTicketReply>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.AuthorName).HasMaxLength(200).IsRequired();
+            e.HasIndex(x => x.TicketId);
         });
 
         // ── StockItem ─────────────────────────────────────────────────────────
