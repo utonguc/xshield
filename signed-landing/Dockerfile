@@ -12,5 +12,7 @@ RUN npm config set fetch-retries 5 \
 
 COPY . .
 
+RUN npm run build
+
 EXPOSE 3002
 CMD ["npm", "run", "start"]
