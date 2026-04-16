@@ -210,5 +210,61 @@ public static class SchemaUpdater
         CREATE INDEX IF NOT EXISTS ix_notifications_dedupe ON "Notifications"("ClinicId", "DedupeKey", "CreatedAtUtc" DESC)
             WHERE "DedupeKey" IS NOT NULL;
 
+        -- TABLE: Surveys
+        CREATE TABLE IF NOT EXISTS "Surveys" (
+            "Id"           uuid         NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+            "ClinicId"     uuid         NOT NULL,
+            "Title"        text         NOT NULL,
+            "Description"  text,
+            "Status"       varchar(20)  NOT NULL DEFAULT 'Active',
+            "CreatedAtUtc" timestamptz  NOT NULL DEFAULT now(),
+            "UpdatedAtUtc" timestamptz  NOT NULL DEFAULT now(),
+            CONSTRAINT fk_surveys_clinic
+                FOREIGN KEY ("ClinicId") REFERENCES "Clinics"("Id") ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS ix_surveys_clinic ON "Surveys"("ClinicId");
+
+        -- TABLE: SurveyQuestions
+        CREATE TABLE IF NOT EXISTS "SurveyQuestions" (
+            "Id"         uuid        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+            "SurveyId"   uuid        NOT NULL,
+            "SortOrder"  integer     NOT NULL DEFAULT 1,
+            "Text"       text        NOT NULL,
+            "Type"       varchar(20) NOT NULL DEFAULT 'rating',
+            "Options"    text,
+            "IsRequired" boolean     NOT NULL DEFAULT true,
+            CONSTRAINT fk_surveyquestions_survey
+                FOREIGN KEY ("SurveyId") REFERENCES "Surveys"("Id") ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS ix_surveyquestions_survey ON "SurveyQuestions"("SurveyId");
+
+        -- TABLE: SurveyResponses
+        CREATE TABLE IF NOT EXISTS "SurveyResponses" (
+            "Id"             uuid        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+            "SurveyId"       uuid        NOT NULL,
+            "PatientId"      uuid,
+            "PatientName"    text,
+            "Email"          text,
+            "SubmittedAtUtc" timestamptz NOT NULL DEFAULT now(),
+            CONSTRAINT fk_surveyresponses_survey
+                FOREIGN KEY ("SurveyId") REFERENCES "Surveys"("Id") ON DELETE CASCADE,
+            CONSTRAINT fk_surveyresponses_patient
+                FOREIGN KEY ("PatientId") REFERENCES "Patients"("Id") ON DELETE SET NULL
+        );
+        CREATE INDEX IF NOT EXISTS ix_surveyresponses_survey ON "SurveyResponses"("SurveyId");
+
+        -- TABLE: SurveyAnswers
+        CREATE TABLE IF NOT EXISTS "SurveyAnswers" (
+            "Id"         uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+            "ResponseId" uuid NOT NULL,
+            "QuestionId" uuid NOT NULL,
+            "Value"      text,
+            CONSTRAINT fk_surveyanswers_response
+                FOREIGN KEY ("ResponseId") REFERENCES "SurveyResponses"("Id") ON DELETE CASCADE,
+            CONSTRAINT fk_surveyanswers_question
+                FOREIGN KEY ("QuestionId") REFERENCES "SurveyQuestions"("Id") ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS ix_surveyanswers_response ON "SurveyAnswers"("ResponseId");
+
         """;
 }
