@@ -80,7 +80,7 @@ services:
 
   xshield-web:
     build:
-      context: ../../xshield
+      context: ../..
     container_name: xshield_web
     restart: unless-stopped
     environment:
