@@ -77,7 +77,7 @@ const products = [
     ],
     color: "#8b5cf6",
     colorRgb: "139,92,246",
-    url: "#iletisim",
+    url: "https://signed.xshield.com.tr",
     mockLines: [
       { w: "75%", c: "#8b5cf6" }, { w: "50%", c: "#2d1b69" }, { w: "90%", c: "#2d1b69" },
       { w: "65%", c: "#8b5cf6" }, { w: "40%", c: "#2d1b69" }, { w: "70%", c: "#2d1b69" },
