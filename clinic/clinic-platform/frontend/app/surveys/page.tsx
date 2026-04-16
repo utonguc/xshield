@@ -189,7 +189,7 @@ export default function SurveysPage() {
               <div style={{ display: "flex", gap: 16, marginTop: 10, fontSize: 12, color: "#94a3b8" }}>
                 <span>❓ {s.questionCount} soru</span>
                 <span>📝 {s.responseCount} yanıt</span>
-                {s.avgRating !== undefined && (
+                {s.avgRating != null && (
                   <span style={{ color: "#f59e0b" }}>★ {s.avgRating.toFixed(1)}</span>
                 )}
               </div>
@@ -294,7 +294,7 @@ export default function SurveysPage() {
                               <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
                                 {fmtDate(r.submittedAtUtc)}
                                 {r.email && <span style={{ marginLeft: 8 }}>· {r.email}</span>}
-                                {r.ratingAvg !== undefined && (
+                                {r.ratingAvg != null && (
                                   <span style={{ marginLeft: 8 }}>· <Stars value={r.ratingAvg} /> {r.ratingAvg.toFixed(1)}</span>
                                 )}
                               </div>
