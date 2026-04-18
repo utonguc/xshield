@@ -10,6 +10,7 @@ type Result = {
   tempPassword: string;
   trialEndsAt: string;
   loginUrl: string;
+  email?: string;
 };
 
 export default function DemoPage() {
@@ -35,7 +36,7 @@ export default function DemoPage() {
       if (!res.ok) {
         setError(data.message ?? "Bir hata oluştu.");
       } else {
-        setResult(data as Result);
+        setResult({ ...(data as Result), email: form.email });
       }
     } catch {
       setError("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
@@ -88,7 +89,7 @@ export default function DemoPage() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
-                  ["Kullanıcı Adı", result.userName],
+                  ["E-posta", result.email ?? ""],
                   ["Şifre", result.tempPassword],
                 ].map(([label, val]) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
