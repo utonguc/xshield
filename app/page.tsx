@@ -66,7 +66,7 @@ const products = [
   {
     name: "Signed",
     tagline: "Mail İmza Yönetim Platformu",
-    badge: "Yakında",
+    badge: "Aktif Platform",
     desc: "Kurumsal e-posta imzalarını merkezi olarak yönetin. Marka tutarlılığını sağlayın, kampanya imzaları oluşturun ve tüm çalışanların imzalarını tek bir panelden anlık güncelleyin.",
     features: [
       { icon: "✉️", text: "Merkezi imza yönetimi" },
@@ -81,6 +81,26 @@ const products = [
     mockLines: [
       { w: "75%", c: "#8b5cf6" }, { w: "50%", c: "#2d1b69" }, { w: "90%", c: "#2d1b69" },
       { w: "65%", c: "#8b5cf6" }, { w: "40%", c: "#2d1b69" }, { w: "70%", c: "#2d1b69" },
+    ],
+  },
+  {
+    name: "xCut",
+    tagline: "Salon Yönetim Platformu",
+    badge: "Aktif Platform",
+    desc: "Kuaför ve güzellik salonu süreçlerini uçtan uca dijitalleştiren bulut tabanlı SaaS platform. Randevu yönetimi, stilist takibi, müşteri portföyü, finans ve stok modülleriyle salonunuzu bir üst seviyeye taşıyın.",
+    features: [
+      { icon: "✂️", text: "Randevu & takvim yönetimi" },
+      { icon: "👥", text: "Müşteri CRM & takibi" },
+      { icon: "💰", text: "Fatura, finans ve stok" },
+      { icon: "🌐", text: "Salon web sitesi builder" },
+      { icon: "📊", text: "Gerçek zamanlı raporlama" },
+    ],
+    color: "#7c3aed",
+    colorRgb: "124,58,237",
+    url: "https://xcut.xshield.com.tr",
+    mockLines: [
+      { w: "65%", c: "#7c3aed" }, { w: "80%", c: "#2e1065" }, { w: "50%", c: "#2e1065" },
+      { w: "75%", c: "#2e1065" }, { w: "60%", c: "#7c3aed" }, { w: "85%", c: "#2e1065" },
     ],
   },
   {
@@ -441,7 +461,7 @@ export default function Home() {
                 ölçekli işletmelerden büyük kurumsal yapılara kadar kapsamlı çözümler sunuyoruz.
               </p>
               <p style={{ color: "var(--muted)", fontSize: 15, lineHeight: 1.8, marginBottom: 32 }}>
-                Kendi geliştirdiğimiz yazılım ürünleri (e-Clinic, Signed, ShieldSpot) ve yönetilen
+                Kendi geliştirdiğimiz yazılım ürünleri (e-Clinic, Signed, xCut, ShieldSpot) ve yönetilen
                 hizmet modelimizle müşterilerimizin teknoloji yükünü üstleniyor, onların asıl işlerine
                 odaklanmalarını sağlıyoruz.
               </p>
@@ -634,6 +654,7 @@ export default function Home() {
                     <option>IT Danışmanlığı</option>
                     <option>e-Clinic</option>
                     <option>Signed</option>
+                    <option>xCut</option>
                     <option>ShieldSpot</option>
                     <option>Diğer</option>
                   </select>
