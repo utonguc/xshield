@@ -1,4 +1,4 @@
-import "./globals.css";
+import GlobalStyles from "./GlobalStyles";
 import AuthGuard from "@/components/AuthGuard";
 import type { Metadata, Viewport } from "next";
 
@@ -18,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="tr">
       <body>
+        <GlobalStyles />
         <AuthGuard>{children}</AuthGuard>
       </body>
     </html>
