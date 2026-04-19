@@ -1,4 +1,4 @@
-import "@/app/globals.css";
+import "./globals.css";
 import AuthGuard from "@/components/AuthGuard";
 import type { Metadata, Viewport } from "next";
 
