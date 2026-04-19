@@ -10,6 +10,10 @@ RUN npm config set fetch-retries 5 \
 
 FROM node:20-alpine AS builder
 WORKDIR /app
+ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_BUILD_VERSION
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_BUILD_VERSION=$NEXT_PUBLIC_BUILD_VERSION
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
