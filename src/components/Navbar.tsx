@@ -13,7 +13,7 @@ const serviceItems = [
 const productItems = [
   { name: "e-Clinic", tagline: "Klinik Yönetim Platformu", color: "#3b82f6", colorRgb: "59,130,246", href: "https://eclinic.xshield.com.tr", external: true, badge: null },
   { name: "Signed", tagline: "Mail İmza Yönetimi", color: "#8b5cf6", colorRgb: "139,92,246", href: "https://signed.xshield.com.tr", external: true, badge: null },
-  { name: "xCut", tagline: "Salon Yönetim Platformu", color: "#7c3aed", colorRgb: "124,58,237", href: "#urunler", external: false, badge: null },
+  { name: "xCut", tagline: "Salon Yönetim Platformu", color: "#7c3aed", colorRgb: "124,58,237", href: "https://xcut.xshield.com.tr", external: true, badge: null },
   { name: "ShieldSpot", tagline: "Hotspot Yönetimi", color: "#06b6d4", colorRgb: "6,182,212", href: "#urunler", external: false, badge: "Yakında" },
 ];
 
