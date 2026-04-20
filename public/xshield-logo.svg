@@ -1,0 +1,67 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0d1b2e"/>
+      <stop offset="100%" stop-color="#060d1f"/>
+    </linearGradient>
+    <linearGradient id="iconGrad" x1="262" y1="262" x2="762" y2="762" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="60%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="262" y1="262" x2="512" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.22)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+    <filter id="iconGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="36" flood-color="#3b82f6" flood-opacity="0.55"/>
+    </filter>
+    <filter id="outerGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="0" stdDeviation="60" flood-color="#3b82f6" flood-opacity="0.12"/>
+    </filter>
+    <clipPath id="iconClip">
+      <rect x="262" y="262" width="500" height="500" rx="112"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="url(#bgGrad)"/>
+
+  <!-- Subtle dot-grid pattern -->
+  <g opacity="1">
+    <circle cx="128" cy="128" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="256" cy="128" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="384" cy="128" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="640" cy="128" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="768" cy="128" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="896" cy="128" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="128" cy="256" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="896" cy="256" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="128" cy="768" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="896" cy="768" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="128" cy="896" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="256" cy="896" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="384" cy="896" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="640" cy="896" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="768" cy="896" r="2" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="896" cy="896" r="2" fill="#3b82f6" opacity="0.12"/>
+  </g>
+
+  <!-- Outer glow ring -->
+  <rect x="232" y="232" width="560" height="560" rx="136" fill="none" stroke="rgba(59,130,246,0.1)" stroke-width="1"/>
+
+  <!-- Icon shadow/glow layer -->
+  <rect x="262" y="262" width="500" height="500" rx="112" fill="url(#iconGrad)" filter="url(#iconGlow)"/>
+
+  <!-- Main icon background -->
+  <rect x="262" y="262" width="500" height="500" rx="112" fill="url(#iconGrad)"/>
+
+  <!-- Gloss highlight (top portion) -->
+  <rect x="262" y="262" width="500" height="230" fill="url(#gloss)" clip-path="url(#iconClip)"/>
+
+  <!-- X mark — two bold diagonal lines centered at (512, 512) -->
+  <!-- Line 1: top-left to bottom-right -->
+  <line x1="390" y1="390" x2="634" y2="634" stroke="white" stroke-width="86" stroke-linecap="round"/>
+  <!-- Line 2: top-right to bottom-left -->
+  <line x1="634" y1="390" x2="390" y2="634" stroke="white" stroke-width="86" stroke-linecap="round"/>
+</svg>
