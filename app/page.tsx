@@ -104,10 +104,30 @@ const products = [
     ],
     color: "#7c3aed",
     colorRgb: "124,58,237",
-    url: "#urunler",
+    url: "https://xcut.xshield.com.tr",
     mockLines: [
       { w: "65%", c: "#7c3aed" }, { w: "80%", c: "#2e1065" }, { w: "50%", c: "#2e1065" },
       { w: "75%", c: "#2e1065" }, { w: "60%", c: "#7c3aed" }, { w: "85%", c: "#2e1065" },
+    ],
+  },
+  {
+    name: "xSignage",
+    tagline: "Dijital Tabela Yönetim Platformu",
+    badge: "Aktif Platform",
+    desc: "Tüm dijital ekranlarınızı tek panelden yönetin. Playlist oluşturun, medya yükleyin ve Raspberry Pi veya Linux cihazlara anlık push gönderin. Gerçek zamanlı WebSocket bağlantısıyla cihaz durumunu anlık izleyin.",
+    features: [
+      { icon: "📺", text: "Çoklu ekran yönetimi" },
+      { icon: "🎬", text: "Playlist & medya builder" },
+      { icon: "⚡", text: "Anlık push & güncelleme" },
+      { icon: "🥧", text: "Raspberry Pi agent desteği" },
+      { icon: "📡", text: "Gerçek zamanlı cihaz izleme" },
+    ],
+    color: "#0ea5e9",
+    colorRgb: "14,165,233",
+    url: "https://signage.xshield.com.tr",
+    mockLines: [
+      { w: "70%", c: "#0ea5e9" }, { w: "85%", c: "#0c4a6e" }, { w: "55%", c: "#0c4a6e" },
+      { w: "75%", c: "#0c4a6e" }, { w: "60%", c: "#0ea5e9" }, { w: "80%", c: "#0c4a6e" },
     ],
   },
   {
@@ -619,7 +639,7 @@ export default function Home() {
                 ölçekli işletmelerden büyük kurumsal yapılara kadar kapsamlı çözümler sunuyoruz.
               </p>
               <p style={{ color: "var(--muted)", fontSize: 15, lineHeight: 1.85, marginBottom: 36 }}>
-                Kendi geliştirdiğimiz SaaS ürünleri (e-Clinic, Signed, xCut, ShieldSpot) ve yönetilen
+                Kendi geliştirdiğimiz SaaS ürünleri (e-Clinic, Signed, xCut, xSignage, ShieldSpot) ve yönetilen
                 hizmet modelimizle müşterilerimizin teknoloji yükünü üstleniyor, onların asıl işlerine
                 odaklanmalarını sağlıyoruz.
               </p>
@@ -830,6 +850,7 @@ export default function Home() {
                       <option>e-Clinic</option>
                       <option>Signed</option>
                       <option>xCut</option>
+                      <option>xSignage</option>
                       <option>ShieldSpot</option>
                     </optgroup>
                     <option>Ücretsiz Altyapı Analizi</option>
