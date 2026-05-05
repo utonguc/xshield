@@ -49,9 +49,9 @@ export default function Navbar() {
     <nav style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
       transition: "all 0.3s ease",
-      background: scrolled ? "rgba(6,13,31,0.96)" : "transparent",
-      backdropFilter: scrolled ? "blur(18px)" : "none",
-      borderBottom: scrolled ? "1px solid rgba(59,130,246,0.15)" : "1px solid transparent",
+      background: scrolled ? "rgba(6,13,31,0.98)" : "rgba(6,13,31,0.65)",
+      backdropFilter: "blur(18px)",
+      borderBottom: scrolled ? "1px solid rgba(59,130,246,0.15)" : "1px solid rgba(255,255,255,0.05)",
     }}>
       {/* Scroll progress bar */}
       <div style={{
@@ -85,7 +85,7 @@ export default function Navbar() {
             onMouseEnter={() => showDropdown("hizmetler")}
             onMouseLeave={scheduleHide}>
             <a href="#hizmetler" className="nav-link" style={{
-              color: "var(--muted)", textDecoration: "none", fontSize: 14, fontWeight: 500,
+              color: "rgba(255,255,255,0.6)", textDecoration: "none", fontSize: 14, fontWeight: 500,
               padding: "8px 12px", borderRadius: 8, display: "flex", alignItems: "center", gap: 5,
             }}>
               Hizmetler
@@ -155,7 +155,7 @@ export default function Navbar() {
             onMouseEnter={() => showDropdown("urunler")}
             onMouseLeave={scheduleHide}>
             <a href="#urunler" className="nav-link" style={{
-              color: "var(--muted)", textDecoration: "none", fontSize: 14, fontWeight: 500,
+              color: "rgba(255,255,255,0.6)", textDecoration: "none", fontSize: 14, fontWeight: 500,
               padding: "8px 12px", borderRadius: 8, display: "flex", alignItems: "center", gap: 5,
             }}>
               Ürünler
@@ -218,12 +218,12 @@ export default function Navbar() {
           </div>
 
           {[
-            { label: "Hakkımızda", href: "#hakkimizda" },
             { label: "SSS", href: "#sss" },
+            { label: "Hakkımızda", href: "#hakkimizda" },
             { label: "İletişim", href: "#iletisim" },
           ].map((l) => (
             <a key={l.href} href={l.href} className="nav-link" style={{
-              color: "var(--muted)", textDecoration: "none", fontSize: 14, fontWeight: 500,
+              color: "rgba(255,255,255,0.6)", textDecoration: "none", fontSize: 14, fontWeight: 500,
               padding: "8px 12px", borderRadius: 8,
             }}>{l.label}</a>
           ))}
@@ -335,8 +335,8 @@ export default function Navbar() {
           </div>
 
           {[
-            { label: "Hakkımızda", href: "#hakkimizda" },
             { label: "SSS", href: "#sss" },
+            { label: "Hakkımızda", href: "#hakkimizda" },
             { label: "İletişim", href: "#iletisim" },
           ].map(l => (
             <a key={l.href} href={l.href} onClick={() => setMobileOpen(false)} style={{
@@ -358,7 +358,7 @@ export default function Navbar() {
       <style>{`
         .nav-links { display: flex !important; }
         .hamburger  { display: none  !important; }
-        .nav-link:hover { color: var(--text) !important; background: rgba(59,130,246,0.08) !important; }
+        .nav-link:hover { color: #fff !important; background: rgba(59,130,246,0.08) !important; }
         @media (max-width: 900px) {
           .nav-links { display: none !important; }
           .hamburger { display: flex !important; }
