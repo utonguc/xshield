@@ -40,8 +40,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="tr" className={`${geistSans.variable} scroll-smooth`}>
-      <body>{children}</body>
+    <html lang="tr" className={geistSans.variable} style={{ background: "#060d1f" }}>
+      <body style={{ background: "#060d1f" }}>{children}</body>
     </html>
   );
 }
