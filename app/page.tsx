@@ -111,8 +111,8 @@ function useScrollReveal() {
 
     const show = (el: HTMLElement) => {
       el.style.opacity = "1";
-      el.style.transform = "";
-      el.style.pointerEvents = "";
+      el.style.transform = "none";
+      el.style.pointerEvents = "auto";
     };
 
     const check = () => {
@@ -125,11 +125,14 @@ function useScrollReveal() {
     };
 
     window.addEventListener("scroll", check, { passive: true });
-    const t = setTimeout(() => { hidden.forEach(show); hidden.length = 0; }, 3000);
+    // Re-check after layout settles (fonts, images)
+    const t1 = setTimeout(check, 200);
+    const t2 = setTimeout(check, 800);
 
     return () => {
       window.removeEventListener("scroll", check);
-      clearTimeout(t);
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, []);
 }
@@ -249,7 +252,7 @@ export default function Home() {
             <h2 className="sr sec-h2" data-d="1">Kendi Geliştirdiğimiz<br /><span style={{ color: "rgba(255,255,255,0.2)" }}>Dijital Platformlar</span></h2>
           </div>
 
-          <div className="sr product-shell" data-d="2">
+          <div className="product-shell">
             {/* Tab list */}
             <div className="product-tabs">
               {products.map((p, i) => (
@@ -392,7 +395,7 @@ export default function Home() {
             <div className="sr sec-tag" style={{ color: "#8b5cf6", textAlign: "center" }}>SSS</div>
             <h2 className="sr sec-h2" data-d="1" style={{ textAlign: "center", marginBottom: 72 }}>Sık Sorulan<br /><span style={{ color: "rgba(255,255,255,0.2)" }}>Sorular</span></h2>
             {faqItems.map((f, i) => (
-              <div key={i} className="sr faq-item" data-d="1" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+              <div key={i} className="faq-item" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                 <button onClick={() => setOpenFaq(openFaq === i ? null : i)} style={{ width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: "26px 0", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 20 }}>
                   <span style={{ fontSize: 16, fontWeight: 600, color: openFaq === i ? "#fff" : "rgba(255,255,255,0.7)", transition: "color 0.2s", lineHeight: 1.5 }}>{f.q}</span>
                   <span className={`faq-icon${openFaq === i ? " open" : ""}`}>+</span>
