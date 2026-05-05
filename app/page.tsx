@@ -95,25 +95,40 @@ const faqItems = [
 
 function useScrollReveal() {
   useEffect(() => {
-    const check = () => {
-      document.querySelectorAll<HTMLElement>(".sr:not(.sr-v)").forEach((el) => {
-        const r = el.getBoundingClientRect();
-        if (r.top < window.innerHeight * 0.94 && r.bottom > 0) {
-          el.classList.add("sr-v");
-        }
-      });
+    const els = Array.from(document.querySelectorAll<HTMLElement>(".sr"));
+    const hidden: HTMLElement[] = [];
+
+    els.forEach((el) => {
+      if (el.getBoundingClientRect().top > window.innerHeight * 0.88) {
+        const d = Number(el.dataset.d || 0) * 100;
+        el.style.opacity = "0";
+        el.style.transform = "translateY(28px)";
+        el.style.pointerEvents = "none";
+        el.style.transition = `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${d}ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${d}ms`;
+        hidden.push(el);
+      }
+    });
+
+    const show = (el: HTMLElement) => {
+      el.style.opacity = "1";
+      el.style.transform = "";
+      el.style.pointerEvents = "";
     };
-    check();
+
+    const check = () => {
+      for (let i = hidden.length - 1; i >= 0; i--) {
+        if (hidden[i].getBoundingClientRect().top < window.innerHeight * 0.93) {
+          show(hidden[i]);
+          hidden.splice(i, 1);
+        }
+      }
+    };
+
     window.addEventListener("scroll", check, { passive: true });
-    window.addEventListener("resize", check, { passive: true });
-    const t = setTimeout(() => {
-      document.querySelectorAll<HTMLElement>(".sr:not(.sr-v)").forEach((el) => {
-        el.classList.add("sr-v");
-      });
-    }, 2500);
+    const t = setTimeout(() => { hidden.forEach(show); hidden.length = 0; }, 3000);
+
     return () => {
       window.removeEventListener("scroll", check);
-      window.removeEventListener("resize", check);
       clearTimeout(t);
     };
   }, []);
@@ -483,14 +498,8 @@ export default function Home() {
         .hero-stats { display: flex; margin-top: 72px; padding-top: 40px; border-top: 1px solid rgba(255,255,255,0.07); }
         .stat-item  { flex: 1; padding-right: 32px; margin-right: 32px; }
 
-        /* ── Scroll reveal ──────────────────────────────────────────────────── */
-        .sr { opacity: 0; transform: translateY(32px); pointer-events: none;
-              transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1), transform 0.85s cubic-bezier(0.16,1,0.3,1); }
-        .sr.sr-v { opacity: 1; transform: none; pointer-events: auto; }
-        .sr[data-d="1"] { transition-delay: 80ms; }
-        .sr[data-d="2"] { transition-delay: 180ms; }
-        .sr[data-d="3"] { transition-delay: 280ms; }
-        .sr[data-d="4"] { transition-delay: 380ms; }
+        /* .sr — JS sets inline opacity/transform; CSS only provides fallback transition */
+        .sr { transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1); }
 
         /* ── Services ───────────────────────────────────────────────────────── */
         .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06); }
