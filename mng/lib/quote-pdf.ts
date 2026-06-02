@@ -76,7 +76,16 @@ td{padding:7px 10px;font-size:9pt;border-bottom:1px solid #e2e8f0;color:#1e293b}
 .flogo{font-size:10pt;font-weight:700;color:#0f172a}.flogo span{color:#3b82f6}
 .fcontact{font-size:8pt;color:#64748b;margin-top:3px}
 .ttext{font-family:inherit;font-size:8pt;color:#475569;line-height:1.55;white-space:pre-wrap}
+.wm-brand{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);font-size:78pt;font-weight:900;color:rgba(15,23,42,0.042);white-space:nowrap;pointer-events:none;z-index:0;letter-spacing:0.1em;user-select:none}
+.wm-status{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:58pt;font-weight:900;white-space:nowrap;pointer-events:none;z-index:1;letter-spacing:0.06em;user-select:none;border-width:8px;border-style:solid;padding:8px 20px;border-radius:8px;opacity:0.15}
+.wm-draft{color:#64748b;border-color:#64748b}
+.wm-rejected{color:#dc2626;border-color:#dc2626}
+.wm-expired{color:#ea580c;border-color:#ea580c}
 </style></head><body>
+<div class="wm-brand">xSHIELD</div>
+${quote.status === 'draft' ? '<div class="wm-status wm-draft">TASLAK</div>' : ''}
+${quote.status === 'rejected' ? '<div class="wm-status wm-rejected">İPTAL</div>' : ''}
+${quote.status === 'expired' ? '<div class="wm-status wm-expired">GEÇERSİZ</div>' : ''}
 <div class="page">
   <div class="hdr">
     <div><div class="logo">x<span>Shield</span></div><div class="lsub">IT Güvenlik &amp; Yönetim Hizmetleri</div></div>
