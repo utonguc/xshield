@@ -171,6 +171,10 @@ export default async function QuoteDetailPage({ params }: Params) {
       {/* ── PRINT VIEW (A4) ── */}
       <div className="print-only" id="print-doc">
         <div className="p-page">
+          <div className="p-wm-brand">xSHIELD</div>
+          {quote.status === 'draft' && <div className="p-wm-status p-wm-draft">TASLAK</div>}
+          {quote.status === 'rejected' && <div className="p-wm-status p-wm-rejected">İPTAL</div>}
+          {quote.status === 'expired' && <div className="p-wm-status p-wm-expired">GEÇERSİZ</div>}
 
           {/* Header */}
           <div className="p-header">
@@ -266,6 +270,10 @@ export default async function QuoteDetailPage({ params }: Params) {
       {quote.terms && (
         <div className="print-only p-terms-page">
           <div className="p-page">
+            <div className="p-wm-brand">xSHIELD</div>
+            {quote.status === 'draft' && <div className="p-wm-status p-wm-draft">TASLAK</div>}
+            {quote.status === 'rejected' && <div className="p-wm-status p-wm-rejected">İPTAL</div>}
+            {quote.status === 'expired' && <div className="p-wm-status p-wm-expired">GEÇERSİZ</div>}
             <div className="p-header">
               <div className="p-logo-block">
                 <div className="p-logo">x<span>Shield</span></div>
@@ -337,7 +345,12 @@ const css = `
   body { background:#fff!important; color:#000!important; }
 }
 
-.p-page { font-family:'Segoe UI',Arial,sans-serif; font-size:10pt; color:#1e293b; background:#fff; padding:0; width:100%; }
+.p-page { font-family:'Segoe UI',Arial,sans-serif; font-size:10pt; color:#1e293b; background:#fff; padding:0; width:100%; position:relative; }
+.p-wm-brand { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-45deg); font-size:80pt; font-weight:900; color:rgba(15,23,42,0.07); white-space:nowrap; pointer-events:none; z-index:0; letter-spacing:0.1em; user-select:none; }
+.p-wm-status { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-35deg); font-size:60pt; font-weight:900; white-space:nowrap; pointer-events:none; z-index:1; letter-spacing:0.06em; user-select:none; border-width:8px; border-style:solid; padding:8px 20px; border-radius:8px; opacity:0.22; }
+.p-wm-draft { color:#64748b; border-color:#64748b; }
+.p-wm-rejected { color:#dc2626; border-color:#dc2626; }
+.p-wm-expired { color:#ea580c; border-color:#ea580c; }
 .p-header { display:flex; justify-content:space-between; align-items:flex-start; padding:20px 24px 16px; background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); }
 .p-logo { font-size:22pt; font-weight:900; color:#fff; }
 .p-logo span { color:#3b82f6; }
