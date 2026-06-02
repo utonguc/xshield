@@ -149,6 +149,14 @@ export default async function DashboardPage() {
      ORDER BY vc.end_date LIMIT 10`
   );
 
+  type LicExpiry = { id: number; customer_id: number; company_name: string; name: string; category: string; end_date: string };
+  const licenseExpiry = await query<LicExpiry>(
+    `SELECT cl.id, cl.customer_id, c.company_name, cl.name, cl.category, cl.end_date
+     FROM customer_licenses cl JOIN customers c ON c.id=cl.customer_id
+     WHERE cl.end_date IS NOT NULL AND cl.end_date <= CURRENT_DATE + INTERVAL '60 days'
+     ORDER BY cl.end_date LIMIT 10`
+  );
+
   // Build last 6 months for chart (fill missing months with 0)
   const chartMonths: { label: string; try_total: number; usd_total: number }[] = [];
   for (let i = 5; i >= 0; i--) {
@@ -296,6 +304,32 @@ export default async function DashboardPage() {
                   <a key={c.id} href={`/customers/${c.customer_id}/vendor-contracts`} className="warn-item" style={{ textDecoration: "none" }}>
                     <span className="warn-co">{c.company_name} — <span style={{ color: "var(--text-dim)", fontWeight: 500 }}>{c.vendor_name}{c.service_type ? ` (${c.service_type})` : ""}</span></span>
                     <span className="warn-badge" style={{ color: col, background: `${col}15`, borderColor: `${col}30` }}>
+                      {expired ? `${Math.abs(dLeft)}g önce bitti` : dLeft === 0 ? "Bugün bitiyor" : `${dLeft}g kaldı`}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── License expiry warnings ── */}
+        {(licenseExpiry ?? []).length > 0 && (
+          <div className="warn-panel" style={{ borderColor: "rgba(234,179,8,.3)", background: "rgba(234,179,8,.04)" }}>
+            <div className="warn-hdr">
+              <span className="warn-dot" style={{ background: "#ca8a04" }}>!</span>
+              <span className="warn-title">Lisans Bitiş Uyarısı</span>
+              <span className="warn-count">{(licenseExpiry ?? []).length} lisans</span>
+            </div>
+            <div className="warn-list">
+              {(licenseExpiry ?? []).map(l => {
+                const dLeft = Math.ceil((new Date(l.end_date).getTime() - Date.now()) / 86400000);
+                const expired = dLeft < 0;
+                const col = expired ? "#ef4444" : dLeft <= 14 ? "#f59e0b" : "#eab308";
+                return (
+                  <a key={l.id} href={`/customers/${l.customer_id}/licenses`} className="warn-item" style={{ textDecoration: "none" }}>
+                    <span className="warn-co">{l.company_name} — <span style={{ color: "var(--text-dim)", fontWeight: 500 }}>{l.name}</span></span>
+                    <span className="warn-badge" style={{ color: col, background: col + "15", borderColor: col + "30" }}>
                       {expired ? `${Math.abs(dLeft)}g önce bitti` : dLeft === 0 ? "Bugün bitiyor" : `${dLeft}g kaldı`}
                     </span>
                   </a>

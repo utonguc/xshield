@@ -258,7 +258,7 @@ export default async function CustomerDetailPage({
   const session = await getSession();
 
   const [
-    customer, tickets, payments, documents, empCount, invCount, vcCount,
+    customer, tickets, payments, documents, empCount, invCount, vcCount, licCount, vaultCount,
     financials, monitors, agentStats, notes, openCount,
     portalUsers, permissionGroups, agentsWithAdSync,
     adConfig, lastAdSync,
@@ -287,8 +287,10 @@ export default async function CustomerDetailPage({
     ),
 
     queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_employees WHERE customer_id=$1", [id]),
-    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_vendor_contracts WHERE customer_id=$1", [id]),
     queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM inventory_items WHERE customer_id=$1", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_vendor_contracts WHERE customer_id=$1", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_licenses WHERE customer_id=$1", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM credential_vaults WHERE customer_id=$1", [id]),
 
     // Finansal özet
     queryOne<{ paid_ytd: string; overdue_total: string; overdue_count: string }>(
@@ -404,6 +406,8 @@ export default async function CustomerDetailPage({
   const numEmployees  = parseInt(empCount?.count  ?? "0", 10);
   const numInventory  = parseInt(invCount?.count  ?? "0", 10);
   const numVendorContracts = parseInt(vcCount?.count ?? "0", 10);
+  const numLicenses = parseInt(licCount?.count ?? "0", 10);
+  const numVault    = parseInt(vaultCount?.count ?? "0", 10);
   const numOpenTickets = parseInt(openCount?.count ?? "0", 10);
   const paidYtd       = Number(financials?.paid_ytd    ?? 0);
   const overdueTotal  = Number(financials?.overdue_total ?? 0);
@@ -448,6 +452,14 @@ export default async function CustomerDetailPage({
             <Link href={`/customers/${id}/vendor-contracts`} className="btn-stat">
               <span className="stat-num">{numVendorContracts}</span>
               <span className="stat-lbl">Dış Söz.</span>
+            </Link>
+            <Link href={`/customers/${id}/licenses`} className="btn-stat">
+              <span className="stat-num">{numLicenses}</span>
+              <span className="stat-lbl">Lisanslar</span>
+            </Link>
+            <Link href={`/customers/${id}/vault`} className="btn-stat">
+              <span className="stat-num">{numVault}</span>
+              <span className="stat-lbl">Kasa</span>
             </Link>
             <Link href={`/tickets/new?customer=${id}`} className="btn-quick">+ Talep</Link>
             {isAdmin && (
