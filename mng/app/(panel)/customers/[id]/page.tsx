@@ -258,7 +258,7 @@ export default async function CustomerDetailPage({
   const session = await getSession();
 
   const [
-    customer, tickets, payments, documents, empCount, invCount,
+    customer, tickets, payments, documents, empCount, invCount, vcCount,
     financials, monitors, agentStats, notes, openCount,
     portalUsers, permissionGroups, agentsWithAdSync,
     adConfig, lastAdSync,
@@ -287,6 +287,7 @@ export default async function CustomerDetailPage({
     ),
 
     queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_employees WHERE customer_id=$1", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_vendor_contracts WHERE customer_id=$1", [id]),
     queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM inventory_items WHERE customer_id=$1", [id]),
 
     // Finansal özet
@@ -402,6 +403,7 @@ export default async function CustomerDetailPage({
   const isAdmin       = session?.role === "admin";
   const numEmployees  = parseInt(empCount?.count  ?? "0", 10);
   const numInventory  = parseInt(invCount?.count  ?? "0", 10);
+  const numVendorContracts = parseInt(vcCount?.count ?? "0", 10);
   const numOpenTickets = parseInt(openCount?.count ?? "0", 10);
   const paidYtd       = Number(financials?.paid_ytd    ?? 0);
   const overdueTotal  = Number(financials?.overdue_total ?? 0);
@@ -442,6 +444,10 @@ export default async function CustomerDetailPage({
             <Link href={`/inventory?customer=${id}`} className="btn-stat">
               <span className="stat-num">{numInventory}</span>
               <span className="stat-lbl">Envanter</span>
+            </Link>
+            <Link href={`/customers/${id}/vendor-contracts`} className="btn-stat">
+              <span className="stat-num">{numVendorContracts}</span>
+              <span className="stat-lbl">Dış Söz.</span>
             </Link>
             <Link href={`/tickets/new?customer=${id}`} className="btn-quick">+ Talep</Link>
             {isAdmin && (

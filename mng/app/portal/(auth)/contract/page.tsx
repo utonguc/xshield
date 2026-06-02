@@ -46,6 +46,13 @@ type Payment = {
   invoice_no: string | null;
 };
 
+type VendorContract = {
+  id: number; vendor_name: string; service_type: string | null;
+  contract_no: string | null; start_date: string | null; end_date: string | null;
+  monthly_fee: string | null; currency: string; notes: string | null;
+  file_stored: string | null; file_original: string | null;
+};
+
 const STATUS_LABEL: Record<string, string> = {
   pending: "Bekliyor", paid: "Ödendi", overdue: "Gecikmiş", cancelled: "İptal",
 };
@@ -59,7 +66,7 @@ export default async function PortalContractPage() {
 
   if (!permissions.contract) notFound();
 
-  const [customer, payments] = await Promise.all([
+  const [customer, payments, vendorContracts] = await Promise.all([
     queryOne<Customer>(
       `SELECT company_name, monthly_fee, currency, billing_day,
               contract_start, contract_end, service_scope,
@@ -71,6 +78,13 @@ export default async function PortalContractPage() {
       `SELECT id, amount, currency, due_date, paid_date, period, status, invoice_no
        FROM payments WHERE customer_id=$1
        ORDER BY due_date DESC LIMIT 24`,
+      [customer_id]
+    ),
+    query<VendorContract>(
+      `SELECT id, vendor_name, service_type, contract_no, start_date, end_date,
+              monthly_fee, currency, notes, file_stored, file_original
+       FROM customer_vendor_contracts WHERE customer_id=$1
+       ORDER BY CASE WHEN end_date IS NULL THEN 1 ELSE 0 END, end_date ASC`,
       [customer_id]
     ),
   ]);
@@ -168,6 +182,42 @@ export default async function PortalContractPage() {
           </div>
         </div>
       )}
+
+      {/* ── Vendor contracts ── */}
+      {vendorContracts.length > 0 && (
+        <div className="card">
+          <div className="card-title">Dış Firmalarla Sözleşmeler</div>
+          <div className="vc-list">
+            {vendorContracts.map(vc => {
+              const days = vc.end_date ? Math.ceil((new Date(vc.end_date).getTime() - Date.now()) / 86400000) : null;
+              const expired = days !== null && days < 0;
+              const urgent  = days !== null && days >= 0 && days <= 30;
+              const col = expired ? "#ef4444" : urgent ? "#f97316" : days !== null && days <= 60 ? "#eab308" : "#22c55e";
+              return (
+                <div key={vc.id} className="vc-row">
+                  <div className="vc-main">
+                    <div className="vc-vendor">{vc.vendor_name}</div>
+                    {vc.service_type && <div className="vc-service">{vc.service_type}</div>}
+                    {vc.contract_no && <div className="vc-no">#{vc.contract_no}</div>}
+                  </div>
+                  <div className="vc-meta">
+                    <span className="vc-dates">{fmtDate(vc.start_date)} — {fmtDate(vc.end_date)}</span>
+                    {vc.monthly_fee && <span className="vc-fee">{CUR[vc.currency] ?? vc.currency}{Number(vc.monthly_fee).toLocaleString("tr-TR")}/ay</span>}
+                    {days !== null && (
+                      <span className="vc-badge" style={{ color: col, background: col + "18", borderColor: col + "30" }}>
+                        {expired ? `${Math.abs(days)}g önce bitti` : days === 0 ? "Bugün bitiyor" : `${days}g kaldı`}
+                      </span>
+                    )}
+                    {vc.file_stored && (
+                      <a href={`/api/vendor-contracts/${vc.id}/download`} className="vc-dl" target="_blank" rel="noreferrer">📎</a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -199,4 +249,16 @@ const css = `
 .payment-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px}
 .paid-date{font-size:11px;color:#94a3b8}
 @media(max-width:500px){.info-grid{grid-template-columns:1fr 1fr}.payment-row{flex-direction:column;align-items:flex-start}.payment-right{flex-wrap:wrap}}
+.vc-list{display:flex;flex-direction:column;gap:0}
+.vc-row{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 0;border-bottom:1px solid #f8fafc;gap:12px;flex-wrap:wrap}
+.vc-row:last-child{border-bottom:none}
+.vc-main{display:flex;flex-direction:column;gap:3px;min-width:0}
+.vc-vendor{font-size:14px;font-weight:700;color:#1e293b}
+.vc-service{font-size:12px;color:#64748b}
+.vc-no{font-size:11px;color:#94a3b8;font-family:monospace}
+.vc-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.vc-dates{font-size:11px;color:#94a3b8}
+.vc-fee{font-size:12px;font-weight:600;color:#3b82f6}
+.vc-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;border:1px solid}
+.vc-dl{font-size:13px;text-decoration:none;cursor:pointer}
 `;

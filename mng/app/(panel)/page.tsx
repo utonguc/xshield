@@ -131,12 +131,23 @@ export default async function DashboardPage() {
          AND paid_date >= date_trunc('month', CURRENT_DATE) - INTERVAL '5 months'
        GROUP BY ym, mo ORDER BY ym`
     ),
+
   ]);
 
   // ── KPI computations ──────────────────────────────────────────────────────
   const totalOpenTickets = openTickets.reduce((s, r) => s + Number(r.count), 0);
   const overdueCount = overduePayments.reduce((s, r) => s + Number(r.count), 0);
   const pendingQuoteCount = Number(pendingQuotes[0]?.count ?? 0);
+
+  type VCExpiry = { id: number; customer_id: number; company_name: string; vendor_name: string; service_type: string | null; end_date: string };
+  const vendorContractExpiry = await query<VCExpiry>(
+    `SELECT vc.id, vc.customer_id, c.company_name, vc.vendor_name, vc.service_type, vc.end_date
+     FROM customer_vendor_contracts vc
+     JOIN customers c ON c.id=vc.customer_id
+     WHERE vc.end_date IS NOT NULL
+       AND vc.end_date <= CURRENT_DATE + INTERVAL '60 days'
+     ORDER BY vc.end_date LIMIT 10`
+  );
 
   // Build last 6 months for chart (fill missing months with 0)
   const chartMonths: { label: string; try_total: number; usd_total: number }[] = [];
@@ -262,6 +273,32 @@ export default async function DashboardPage() {
                       {expired ? `${Math.abs(dLeft)}g önce bitti` : dLeft === 0 ? "Bugün bitiyor" : `${dLeft}g kaldı`}
                     </span>
                   </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Vendor Contract warnings ── */}
+        {(vendorContractExpiry ?? []).length > 0 && (
+          <div className="warn-panel" style={{ borderColor: "rgba(139,92,246,.3)", background: "rgba(139,92,246,.04)" }}>
+            <div className="warn-hdr">
+              <span className="warn-dot" style={{ background: "#7c3aed" }}>!</span>
+              <span className="warn-title">Dış Sözleşme Bitiş Uyarısı</span>
+              <span className="warn-count">{(vendorContractExpiry ?? []).length} sözleşme</span>
+            </div>
+            <div className="warn-list">
+              {(vendorContractExpiry ?? []).map(c => {
+                const dLeft = Math.ceil((new Date(c.end_date).getTime() - Date.now()) / 86400000);
+                const expired = dLeft < 0;
+                const col = expired ? "#ef4444" : dLeft <= 14 ? "#f59e0b" : "#eab308";
+                return (
+                  <a key={c.id} href={`/customers/${c.customer_id}/vendor-contracts`} className="warn-item" style={{ textDecoration: "none" }}>
+                    <span className="warn-co">{c.company_name} — <span style={{ color: "var(--text-dim)", fontWeight: 500 }}>{c.vendor_name}{c.service_type ? ` (${c.service_type})` : ""}</span></span>
+                    <span className="warn-badge" style={{ color: col, background: `${col}15`, borderColor: `${col}30` }}>
+                      {expired ? `${Math.abs(dLeft)}g önce bitti` : dLeft === 0 ? "Bugün bitiyor" : `${dLeft}g kaldı`}
+                    </span>
+                  </a>
                 );
               })}
             </div>
