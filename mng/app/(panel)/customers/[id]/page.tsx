@@ -259,6 +259,7 @@ export default async function CustomerDetailPage({
 
   const [
     customer, tickets, payments, documents, empCount, invCount, vcCount, licCount, vaultCount,
+    complianceCount, riskCount, changeCount,
     financials, monitors, agentStats, notes, openCount,
     portalUsers, permissionGroups, agentsWithAdSync,
     adConfig, lastAdSync,
@@ -291,6 +292,9 @@ export default async function CustomerDetailPage({
     queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_vendor_contracts WHERE customer_id=$1", [id]),
     queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_licenses WHERE customer_id=$1", [id]),
     queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM credential_vaults WHERE customer_id=$1", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM compliance_tasks WHERE customer_id=$1 AND is_active=true", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_risks WHERE customer_id=$1 AND status NOT IN ('closed','accepted')", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM change_requests WHERE customer_id=$1 AND status NOT IN ('completed','cancelled','rejected')", [id]),
 
     // Finansal özet
     queryOne<{ paid_ytd: string; overdue_total: string; overdue_count: string }>(
@@ -408,6 +412,9 @@ export default async function CustomerDetailPage({
   const numVendorContracts = parseInt(vcCount?.count ?? "0", 10);
   const numLicenses = parseInt(licCount?.count ?? "0", 10);
   const numVault    = parseInt(vaultCount?.count ?? "0", 10);
+  const numCompliance = parseInt(complianceCount?.count ?? "0", 10);
+  const numRisks    = parseInt(riskCount?.count ?? "0", 10);
+  const numChanges  = parseInt(changeCount?.count ?? "0", 10);
   const numOpenTickets = parseInt(openCount?.count ?? "0", 10);
   const paidYtd       = Number(financials?.paid_ytd    ?? 0);
   const overdueTotal  = Number(financials?.overdue_total ?? 0);
@@ -460,6 +467,18 @@ export default async function CustomerDetailPage({
             <Link href={`/customers/${id}/vault`} className="btn-stat">
               <span className="stat-num">{numVault}</span>
               <span className="stat-lbl">Kasa</span>
+            </Link>
+            <Link href={`/customers/${id}/compliance`} className="btn-stat">
+              <span className="stat-num">{numCompliance}</span>
+              <span className="stat-lbl">Kontrol</span>
+            </Link>
+            <Link href={`/customers/${id}/risks`} className="btn-stat">
+              <span className="stat-num">{numRisks}</span>
+              <span className="stat-lbl">Risk</span>
+            </Link>
+            <Link href={`/customers/${id}/changes`} className="btn-stat">
+              <span className="stat-num">{numChanges}</span>
+              <span className="stat-lbl">RFC</span>
             </Link>
             <Link href={`/tickets/new?customer=${id}`} className="btn-quick">+ Talep</Link>
             {isAdmin && (
