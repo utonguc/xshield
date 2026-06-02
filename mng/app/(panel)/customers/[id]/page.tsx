@@ -259,7 +259,7 @@ export default async function CustomerDetailPage({
 
   const [
     customer, tickets, payments, documents, empCount, invCount, vcCount, licCount, vaultCount,
-    complianceCount, riskCount, changeCount,
+    complianceCount, riskCount, changeCount, cyberCount,
     financials, monitors, agentStats, notes, openCount,
     portalUsers, permissionGroups, agentsWithAdSync,
     adConfig, lastAdSync,
@@ -295,6 +295,7 @@ export default async function CustomerDetailPage({
     queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM compliance_tasks WHERE customer_id=$1 AND is_active=true", [id]),
     queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_risks WHERE customer_id=$1 AND status NOT IN ('closed','accepted')", [id]),
     queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM change_requests WHERE customer_id=$1 AND status NOT IN ('completed','cancelled','rejected')", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM phishing_campaigns WHERE customer_id=$1", [id]),
 
     // Finansal özet
     queryOne<{ paid_ytd: string; overdue_total: string; overdue_count: string }>(
@@ -415,6 +416,7 @@ export default async function CustomerDetailPage({
   const numCompliance = parseInt(complianceCount?.count ?? "0", 10);
   const numRisks    = parseInt(riskCount?.count ?? "0", 10);
   const numChanges  = parseInt(changeCount?.count ?? "0", 10);
+  const numCyber    = parseInt(cyberCount?.count ?? "0", 10);
   const numOpenTickets = parseInt(openCount?.count ?? "0", 10);
   const paidYtd       = Number(financials?.paid_ytd    ?? 0);
   const overdueTotal  = Number(financials?.overdue_total ?? 0);
@@ -479,6 +481,10 @@ export default async function CustomerDetailPage({
             <Link href={`/customers/${id}/changes`} className="btn-stat">
               <span className="stat-num">{numChanges}</span>
               <span className="stat-lbl">RFC</span>
+            </Link>
+            <Link href={`/customers/${id}/cyber`} className="btn-stat">
+              <span className="stat-num">{numCyber}</span>
+              <span className="stat-lbl">Siber</span>
             </Link>
             <Link href={`/tickets/new?customer=${id}`} className="btn-quick">+ Talep</Link>
             {isAdmin && (
