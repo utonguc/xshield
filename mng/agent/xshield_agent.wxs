@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  xShield Agent MSI Installer
+  Build: candle.exe -ext WixUtilExtension -ext WixUIExtension xshield_agent.wxs
+         light.exe  -ext WixUtilExtension -ext WixUIExtension -out xshield_agent.msi xshield_agent.wixobj
+  Sign:  signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /f cert.pfx /p PASS xshield_agent.msi
+-->
+<?define AgentVersion = "2.2.1" ?>
+<?define Manufacturer = "xShield Teknoloji" ?>
+<?define UpgradeCode  = "3F2E4C1A-8B5D-4F9E-A7C2-6D1E3F8A2B4C" ?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+  <Product Id="*"
+           Name="xShield Agent"
+           Language="1055"
+           Version="$(var.AgentVersion)"
+           Manufacturer="$(var.Manufacturer)"
+           UpgradeCode="$(var.UpgradeCode)">
+
+    <Package InstallerVersion="500"
+             Compressed="yes"
+             InstallScope="perMachine"
+             Platform="x64"
+             Description="xShield Ağ Keşfi ve İzleme Ajanı $(var.AgentVersion)"
+             Manufacturer="$(var.Manufacturer)" />
+
+    <MajorUpgrade
+      DowngradeErrorMessage="Daha yeni bir xShield Agent sürümü zaten kurulu. Önce yeni sürümü kaldırın."
+      Schedule="afterInstallInitialize" />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- ── Properties ─────────────────────────────────────────────── -->
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <!-- AGENT_TOKEN: set by installer UI or command-line (TOKEN=xxx) -->
+    <Property Id="AGENT_TOKEN" Secure="yes" />
+    <!-- AGENT_APIURL: defaults to production, overridable -->
+    <Property Id="AGENT_APIURL" Value="https://mng.xshield.com.tr" Secure="yes" />
+
+    <!-- ── Directory layout ───────────────────────────────────────── -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="xShield Agent" />
+      </Directory>
+    </Directory>
+
+    <!-- ── Components ────────────────────────────────────────────── -->
+    <DirectoryRef Id="INSTALLFOLDER">
+
+      <!-- Agent service executable -->
+      <Component Id="CmpAgentExe" Guid="A1B2C3D4-E5F6-4890-ABCD-EF1234567890" Win64="yes">
+        <File Id="AgentExe" Source="xshield_agent.exe" KeyPath="yes" />
+      </Component>
+
+      <!-- Tray application -->
+      <Component Id="CmpTrayExe" Guid="B2C3D4E5-F6A7-4901-BCDE-F12345678901" Win64="yes">
+        <File Id="TrayExe" Source="xshield_tray.exe" KeyPath="yes" />
+      </Component>
+
+      <!-- Registry config: Token + ApiUrl (read by config_windows.go) -->
+      <Component Id="CmpRegistry" Guid="C3D4E5F6-A7B8-4012-CDEF-234567890123" Win64="yes">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\xShield\Agent"
+                     ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+          <RegistryValue Name="Token"   Type="string"  Value="[AGENT_TOKEN]" />
+          <RegistryValue Name="ApiUrl"  Type="string"  Value="[AGENT_APIURL]" />
+          <RegistryValue Name="Version" Type="string"  Value="$(var.AgentVersion)" KeyPath="yes" />
+        </RegistryKey>
+      </Component>
+
+      <!-- Windows Defender path exclusion for install directory -->
+      <Component Id="CmpDefenderExclusion" Guid="D4E5F6A7-B8C9-4123-DEF0-345678901234" Win64="yes">
+        <!-- Anchor key for component tracking -->
+        <RegistryValue Root="HKLM" Key="SOFTWARE\xShield\Agent"
+                       Name="DefenderExcl" Type="integer" Value="1" KeyPath="yes" />
+        <!-- Add install dir to Defender exclusions (DWORD=0 = exclude path) -->
+        <RegistryValue Root="HKLM"
+                       Key="SOFTWARE\Microsoft\Windows Defender\Exclusions\Paths"
+                       Name="[INSTALLFOLDER]" Type="integer" Value="0" />
+      </Component>
+
+      <!-- Windows Service: install, recovery policy, start/stop/remove -->
+      <Component Id="CmpService" Guid="E5F6A7B8-C9D0-4234-EF01-456789ABCDE0" Win64="yes">
+        <ServiceInstall
+          Id="xShieldAgentSvc"
+          Name="xShieldAgent"
+          DisplayName="xShield Network Agent"
+          Description="xShield ağ keşfi, cihaz izleme ve AD senkronizasyon ajanı. v$(var.AgentVersion)"
+          Type="ownProcess"
+          Start="auto"
+          Account="LocalSystem"
+          ErrorControl="normal"
+          Vital="yes"
+        />
+        <!-- Failure recovery: restart after 10s on each failure, reset counter after 24h -->
+        <util:ServiceConfig
+          ServiceName="xShieldAgent"
+          FirstFailureActionType="restart"
+          SecondFailureActionType="restart"
+          ThirdFailureActionType="restart"
+          RestartServiceDelayInSeconds="10"
+          ResetPeriodInDays="1"
+        />
+        <ServiceControl
+          Id="xShieldAgentSvcCtrl"
+          Name="xShieldAgent"
+          Start="install"
+          Stop="both"
+          Remove="uninstall"
+          Wait="yes"
+        />
+        <RegistryValue Root="HKLM" Key="SOFTWARE\xShield\Agent"
+                       Name="SvcInstalled" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+    </DirectoryRef>
+
+    <!-- ── Features ──────────────────────────────────────────────── -->
+    <Feature Id="FeatureAgent" Title="xShield Agent" Level="1" Absent="disallow"
+             Description="Ağ keşfi ve izleme servisi (zorunlu)">
+      <ComponentRef Id="CmpAgentExe" />
+      <ComponentRef Id="CmpRegistry" />
+      <ComponentRef Id="CmpDefenderExclusion" />
+      <ComponentRef Id="CmpService" />
+    </Feature>
+
+    <Feature Id="FeatureTray" Title="Sistem Tepsisi Uygulaması" Level="1"
+             Description="Görev çubuğu tray uygulaması (opsiyonel)">
+      <ComponentRef Id="CmpTrayExe" />
+    </Feature>
+
+    <!-- ── UI ─────────────────────────────────────────────────────── -->
+    <UI>
+      <!-- Base: WixUI_InstallDir gives Welcome→License→InstallDir→VerifyReady→Progress→Exit -->
+      <UIRef Id="WixUI_InstallDir" />
+
+      <!--
+        Inject AgentConfigDlg between InstallDirDlg and VerifyReadyDlg.
+        Standard Order=3 on InstallDirDlg Next goes to VerifyReadyDlg.
+        Order=4 overrides (last publish with true condition wins) → AgentConfigDlg.
+      -->
+      <Publish Dialog="InstallDirDlg" Control="Next"
+               Event="NewDialog" Value="AgentConfigDlg" Order="4">1</Publish>
+
+      <!--
+        Override VerifyReadyDlg Back to return to AgentConfigDlg on fresh install.
+        (Standard Order=2 goes to InstallDirDlg — we override for fresh installs only.)
+      -->
+      <Publish Dialog="VerifyReadyDlg" Control="Back"
+               Event="NewDialog" Value="AgentConfigDlg" Order="4">NOT Installed</Publish>
+
+      <!-- ── AgentConfigDlg ──────────────────────────────────────── -->
+      <Dialog Id="AgentConfigDlg" Width="370" Height="270"
+              Title="[ProductName] — Bağlantı Yapılandırması">
+
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44"
+                 TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine"   Type="Line"   X="0" Y="44" Width="370" Height="0" />
+
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="210" Height="15"
+                 Transparent="yes" NoPrefix="yes">
+          <Text>{\WixUI_Font_Title}Ajan Bağlantı Bilgileri</Text>
+        </Control>
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="320" Height="15"
+                 Transparent="yes" NoPrefix="yes">
+          <Text>xShield yönetim panelinden aldığınız bilgileri girin.</Text>
+        </Control>
+
+        <!-- Token -->
+        <Control Id="TokenLabel" Type="Text" X="20" Y="58" Width="330" Height="12">
+          <Text>&amp;Ajan Token *</Text>
+        </Control>
+        <Control Id="TokenEdit" Type="Edit" X="20" Y="72" Width="330" Height="18"
+                 Property="AGENT_TOKEN" />
+        <Control Id="TokenHint" Type="Text" X="20" Y="93" Width="330" Height="12">
+          <Text>Panel → Ağ Keşfi → Ajan → Token kopyala</Text>
+        </Control>
+
+        <!-- ApiUrl -->
+        <Control Id="ApiUrlLabel" Type="Text" X="20" Y="115" Width="330" Height="12">
+          <Text>API &amp;URL</Text>
+        </Control>
+        <Control Id="ApiUrlEdit" Type="Edit" X="20" Y="129" Width="330" Height="18"
+                 Property="AGENT_APIURL" />
+        <Control Id="ApiUrlHint" Type="Text" X="20" Y="149" Width="330" Height="12">
+          <Text>Varsayılan: https://mng.xshield.com.tr</Text>
+        </Control>
+
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Geri">
+          <Publish Event="NewDialog" Value="InstallDirDlg">1</Publish>
+        </Control>
+
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17"
+                 Default="yes" Text="&amp;İleri">
+          <!-- Proceed only when token is filled -->
+          <Publish Event="NewDialog" Value="VerifyReadyDlg"><![CDATA[AGENT_TOKEN <> ""]]></Publish>
+          <!-- Show warning if token is empty -->
+          <Publish Event="SpawnDialog" Value="TokenRequiredDlg"><![CDATA[AGENT_TOKEN = ""]]></Publish>
+        </Control>
+
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17"
+                 Cancel="yes" Text="İptal">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+      </Dialog>
+
+      <!-- Simple error dialog when token is empty -->
+      <Dialog Id="TokenRequiredDlg" Width="260" Height="100"
+              Title="Zorunlu Alan" NoMinimize="yes">
+        <Control Id="Text" Type="Text" X="20" Y="20" Width="220" Height="30" NoPrefix="yes">
+          <Text>Ajan Token alanı boş bırakılamaz.\nLütfen token bilginizi girin.</Text>
+        </Control>
+        <Control Id="Ok" Type="PushButton" X="100" Y="68" Width="56" Height="17"
+                 Default="yes" Cancel="yes" Text="Tamam">
+          <Publish Event="EndDialog" Value="Return">1</Publish>
+        </Control>
+      </Dialog>
+    </UI>
+
+    <!-- License RTF (required by WixUI_InstallDir) -->
+    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
+
+  </Product>
+</Wix>
