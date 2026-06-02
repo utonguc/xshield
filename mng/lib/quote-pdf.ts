@@ -140,6 +140,7 @@ export async function generateQuotePdf(quote: any, items: any[]): Promise<Buffer
     executablePath: CHROMIUM_EXEC,
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+    env: { ...process.env, HOME: "/tmp" },
   });
   try {
     const page = await browser.newPage();
