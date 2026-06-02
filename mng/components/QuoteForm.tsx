@@ -252,6 +252,21 @@ export default function QuoteForm({
     });
   };
 
+  const handleCostPriceChange = (idx: number, value: string) => {
+    setItems(prev => {
+      const next = [...prev];
+      const item = next[idx];
+      const cost = parseFloat(value) || 0;
+      const margin = parseFloat(item.margin_pct) || 0;
+      const updated = { ...item, cost_price: value };
+      if (cost > 0 && margin > 0) {
+        updated.unit_price = String(parseFloat((cost * (1 + margin / 100)).toFixed(2)));
+      }
+      next[idx] = recalc(updated);
+      return next;
+    });
+  };
+
   // ── Items ──────────────────────────────────────────────────────────────────
   const recalc = (it: Item): Item => {
     const qty = parseFloat(it.quantity) || 0;
@@ -486,6 +501,7 @@ export default function QuoteForm({
                   <th style={{ width: 72 }}>Adet</th>
                   <th style={{ width: 120 }}>Birim Fiyat ({sym})</th>
                   <th style={{ width: 120 }}>Toplam ({sym})</th>
+                  <th style={{ width: 110 }} className="int-th" title="Dahili — müşteriye gösterilmez">Maliyet ({sym})</th>
                   <th style={{ width: 72 }} className="int-th" title="Dahili — müşteriye gösterilmez">Marj %</th>
                   <th style={{ width: 140 }} className="int-th" title="Dahili — müşteriye gösterilmez">Tedarikçi</th>
                   <th style={{ width: 56 }}></th>
@@ -531,6 +547,11 @@ export default function QuoteForm({
                     </td>
                     <td className="cell-total">
                       {sym}{fmt(item.total_price)}
+                    </td>
+                    <td className="int-td">
+                      <input type="number" min="0" step="0.01" value={item.cost_price}
+                        onChange={(e) => handleCostPriceChange(idx, e.target.value)}
+                        placeholder="—" className="cell-inp int-inp" style={{ textAlign: "right" }} />
                     </td>
                     <td className="int-td">
                       <input type="number" min="0" max="100" step="0.5" value={item.margin_pct}
