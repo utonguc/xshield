@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import ScannerPanel from "./ScannerPanel";
 
 // ── Types ─────────────────────────────────────────────────────────────
 type Campaign = {
@@ -9,8 +10,8 @@ type Campaign = {
   email_template_name: string | null; page_template_name: string | null;
   total: number; sent: number; opened: number; clicked: number; submitted: number;
 };
-type EmailTpl = { id: number; name: string; category: string; subject: string; sender_name: string };
-type PageTpl  = { id: number; name: string; category: string; description: string | null };
+type EmailTpl = { id: number; name: string; category: string; subject: string; sender_name: string; html_body: string | null };
+type PageTpl  = { id: number; name: string; category: string; description: string | null; html_content: string | null };
 type Target   = { name: string; email: string; department?: string };
 type PentestProject = {
   id: number; name: string; type: string; scope: string | null;
@@ -52,6 +53,21 @@ const PENTEST_STATUSES = [
   { value: "completed",  label: "Tamamlandı" },
   { value: "cancelled",  label: "İptal" },
 ];
+const EMAIL_CATS: Record<string, string> = {
+  account:  "Hesap Güvenliği",
+  hr:       "İK / Bordro",
+  delivery: "Teslimat / Kargo",
+  it:       "IT / Teknik",
+  finance:  "Finans",
+  ceo:      "CEO Dolandırıcılığı",
+  other:    "Diğer",
+};
+const PAGE_CATS: Record<string, string> = {
+  microsoft: "Microsoft",
+  google:    "Google",
+  generic:   "Genel Portal",
+  other:     "Diğer",
+};
 
 function getSev(v: string) { return SEVERITIES.find(s => s.value === v) ?? SEVERITIES[2]; }
 function getPType(v: string) { return PENTEST_TYPES.find(t => t.value === v) ?? PENTEST_TYPES[0]; }
@@ -80,7 +96,7 @@ export default function CyberClient({
   initialCampaigns: Campaign[]; emailTemplates: EmailTpl[]; pageTemplates: PageTpl[];
   initialProjects: PentestProject[];
 }) {
-  const [tab, setTab]           = useState<"phishing"|"pentest">("phishing");
+  const [tab, setTab]           = useState<"phishing"|"pentest"|"templates">("phishing");
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [projects, setProjects]   = useState<PentestProject[]>(initialProjects);
   const [msg, setMsg]           = useState<{ text: string; ok: boolean } | null>(null);
@@ -108,10 +124,25 @@ export default function CyberClient({
   const [findingForm, setFindingForm] = useState({ title: "", severity: "medium", cvss_score: "", affected_asset: "", description: "", poc: "", remediation: "", status: "open" });
   const [saving, setSaving] = useState(false);
 
+  // Preview state
+  const [previewHtml, setPreviewHtml]   = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState("");
+
   const toast = (text: string, ok: boolean) => { setMsg({ text, ok }); setTimeout(() => setMsg(null), 4000); };
 
   const inp: React.CSSProperties = { width: "100%", background: "var(--input-bg)", border: "1px solid var(--input-border)", borderRadius: 8, padding: "9px 12px", color: "var(--text)", fontSize: 13, outline: "none" };
   const lbl: React.CSSProperties = { fontSize: 10, fontWeight: 700, color: "var(--section-title)", textTransform: "uppercase" as const, letterSpacing: "0.06em", display: "block", marginBottom: 5 };
+
+  const openPreview = (title: string, html: string) => {
+    const demo = html
+      .replace(/__SUBMIT_URL__/g, "/api/ph/ORNEK_TOKEN/submit")
+      .replace(/__TOKEN__/g, "ORNEK_TOKEN")
+      .replace(/\{\{NAME\}\}/g, "Örnek Kullanıcı")
+      .replace(/\{\{EMAIL\}\}/g, "ornek@firma.com")
+      .replace(/\{\{COMPANY\}\}/g, "Örnek Firma A.Ş.");
+    setPreviewTitle(title);
+    setPreviewHtml(demo);
+  };
 
   // ── Phishing handlers ─────────────────────────────────────────────
   const saveCampaign = async () => {
@@ -247,7 +278,7 @@ export default function CyberClient({
           <p style={{ fontSize: 13, color: "var(--text-dim)", margin: "4px 0 0" }}>{customerName}</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => { setTab("phishing"); setShowCampModal(true); }} style={{ padding: "8px 16px", borderRadius: 8, background: tab === "phishing" ? "#e94560" : "transparent", color: tab === "phishing" ? "#fff" : "#e94560", border: "1px solid #e9456040", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          <button onClick={() => { setTab("phishing"); setShowCampModal(true); }} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid #e9456040", background: tab === "phishing" ? "#e94560" : "transparent", color: tab === "phishing" ? "#fff" : "#e94560", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             + Kampanya
           </button>
           <button onClick={() => { setTab("pentest"); openAddProj(); }} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid #6366f140", background: tab === "pentest" ? "#6366f1" : "transparent", color: tab === "pentest" ? "#fff" : "#6366f1", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
@@ -259,11 +290,12 @@ export default function CyberClient({
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "2px solid var(--border)", paddingBottom: 0 }}>
         {[
-          { key: "phishing", icon: "🎣", label: `Oltalama Simülasyonu (${campaigns.length})` },
-          { key: "pentest",  icon: "🔎", label: `Sızma Testi (${projects.length})` },
+          { key: "phishing",  icon: "🎣", label: `Oltalama (${campaigns.length})` },
+          { key: "pentest",   icon: "🔎", label: `Sızma Testi (${projects.length})` },
+          { key: "templates", icon: "📋", label: `Şablonlar (${emailTemplates.length + pageTemplates.length})` },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key as any)}
-            style={{ padding: "10px 18px", border: "none", borderBottom: `2px solid ${tab === t.key ? "#e94560" : "transparent"}`, marginBottom: -2, background: "transparent", color: tab === t.key ? "#e94560" : "var(--text-dim)", fontSize: 13, fontWeight: tab === t.key ? 700 : 500, cursor: "pointer" }}>
+            style={{ padding: "10px 16px", border: "none", borderBottom: `2px solid ${tab === t.key ? "#e94560" : "transparent"}`, marginBottom: -2, background: "transparent", color: tab === t.key ? "#e94560" : "var(--text-dim)", fontSize: 13, fontWeight: tab === t.key ? 700 : 500, cursor: "pointer" }}>
             {t.icon} {t.label}
           </button>
         ))}
@@ -395,6 +427,20 @@ export default function CyberClient({
                   </div>
                   {isExpanded && projDetail && projDetail.project.id === p.id && (
                     <div style={{ borderTop: "1px solid var(--border)", padding: "14px 18px" }}>
+                      {/* Scanner section */}
+                      <div style={{ marginBottom: 20, background: "rgba(99,102,241,.05)", border: "1px solid rgba(99,102,241,.18)", borderRadius: 10, padding: "12px 16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                          <span style={{ fontSize: 18 }}>🔫</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: "#6366f1" }}>Otomatik Tarama Araçları</span>
+                          <span style={{ fontSize: 11, color: "var(--text-dim)" }}>nmap · nikto · CVE lookup</span>
+                        </div>
+                        <ScannerPanel
+                          customerId={customerId}
+                          projectId={p.id}
+                          onFindingsImported={() => loadProjDetail(p.id)}
+                        />
+                      </div>
+
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--section-title)", textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>
                           Bulgular ({projDetail.findings.length})
@@ -437,6 +483,100 @@ export default function CyberClient({
             })}
           </div>
         )
+      )}
+
+      {/* ── TEMPLATES TAB ────────────────────────────────────────── */}
+      {tab === "templates" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+
+          {/* Tracking flow info */}
+          <div style={{ background: "rgba(99,102,241,.06)", border: "1px solid rgba(99,102,241,.18)", borderRadius: 12, padding: "14px 18px" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#6366f1", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 10 }}>📡 Takip Akışı — Nasıl Çalışır?</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { step: "1", color: "#6366f1", icon: "✉", label: "E-posta gönderilir", desc: "Her hedef için benzersiz token oluşturulur. E-postada görünmez 1×1 piksel (open tracker) ve tıklanabilir link bulunur.", url: "/api/ph/[TOKEN]/c  →  tıklamayı kaydeder" },
+                { step: "2", color: "#3b82f6", icon: "👁", label: "E-posta açılır", desc: "E-posta istemcisi piksel imajı yüklediğinde opened_at kaydedilir.", url: "/api/ph/[TOKEN]/o  →  1×1 şeffaf GIF döner" },
+                { step: "3", color: "#f59e0b", icon: "🔗", label: "Linke tıklanır", desc: "clicked_at kaydedilir, kullanıcı sahte login sayfasına yönlendirilir.", url: "/api/ph/[TOKEN]/land  →  kişiselleştirilmiş HTML sayfa" },
+                { step: "4", color: "#ef4444", icon: "⚠", label: "Form doldurulur", desc: "Girilen veriler TEST verisi olarak kaydedilir, kullanıcı farkındalık sayfasına yönlendirilir.", url: "/api/ph/[TOKEN]/submit  →  veriyi kaydeder, yönlendirir" },
+              ].map(s => (
+                <div key={s.step} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 6, background: `${s.color}20`, color: s.color, fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{s.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>{s.label}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 3 }}>{s.desc}</div>
+                    <code style={{ fontSize: 11, fontFamily: "monospace", color: s.color, background: `${s.color}10`, padding: "2px 6px", borderRadius: 4 }}>{s.url}</code>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 12, padding: "8px 12px", background: "rgba(99,102,241,.08)", borderRadius: 8, fontSize: 11, color: "var(--text-dim)" }}>
+              <strong style={{ color: "#6366f1" }}>Şablon değişkenleri:</strong> {"{{"} NAME {"}}"}  {"{{"} EMAIL {"}}"}  {"{{"} COMPANY {"}}"}  {"{{"} DATE {"}}"}  {"{{TRACKING_PIXEL}}"}  {"{{PHISH_LINK}}"}
+            </div>
+          </div>
+
+          {/* Email Templates */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--section-title)", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 12 }}>
+              📧 E-posta Şablonları ({emailTemplates.length})
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {emailTemplates.map(t => (
+                <div key={t.id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 5, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: "var(--text)" }}>{t.name}</span>
+                      <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "rgba(233,69,96,.1)", color: "#e94560", fontWeight: 700 }}>
+                        {EMAIL_CATS[t.category] ?? t.category}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 2 }}>
+                      <strong style={{ color: "var(--text)" }}>Konu:</strong> {t.subject}
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text-dim)" }}>
+                      <strong style={{ color: "var(--text)" }}>Gönderen:</strong> {t.sender_name}
+                    </div>
+                  </div>
+                  {t.html_body && (
+                    <button onClick={() => openPreview(t.name, t.html_body!)}
+                      style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid rgba(233,69,96,.3)", background: "rgba(233,69,96,.06)", color: "#e94560", fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+                      👁 Önizle
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Page Templates */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--section-title)", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 12 }}>
+              🌐 Landing Page Şablonları ({pageTemplates.length})
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {pageTemplates.map(t => (
+                <div key={t.id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 5, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: "var(--text)" }}>{t.name}</span>
+                      <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "rgba(99,102,241,.1)", color: "#6366f1", fontWeight: 700 }}>
+                        {PAGE_CATS[t.category] ?? t.category}
+                      </span>
+                    </div>
+                    {t.description && (
+                      <div style={{ fontSize: 12, color: "var(--text-dim)" }}>{t.description}</div>
+                    )}
+                  </div>
+                  {t.html_content && (
+                    <button onClick={() => openPreview(t.name, t.html_content!)}
+                      style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid rgba(99,102,241,.3)", background: "rgba(99,102,241,.06)", color: "#6366f1", fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+                      👁 Önizle
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Kampanya Modal ───────────────────────────────────────── */}
@@ -628,6 +768,28 @@ export default function CyberClient({
                 </button>
               </div>
             </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Preview Modal ────────────────────────────────────────── */}
+      {previewHtml && (
+        <>
+          <div onClick={() => setPreviewHtml(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.65)", zIndex: 500, backdropFilter: "blur(3px)" }} />
+          <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "min(860px,96vw)", zIndex: 501, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", boxShadow: "0 32px 80px rgba(0,0,0,.5)" }}>
+            <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>👁 Önizleme — {previewTitle}</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ fontSize: 11, color: "var(--text-dim)" }}>Örnek verilerle gösteriliyor</span>
+                <button onClick={() => setPreviewHtml(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-dim)", fontSize: 20, lineHeight: 1 }}>×</button>
+              </div>
+            </div>
+            <iframe
+              srcDoc={previewHtml}
+              sandbox="allow-same-origin allow-forms"
+              style={{ width: "100%", height: "70vh", border: "none", display: "block", background: "#fff" }}
+              title={previewTitle}
+            />
           </div>
         </>
       )}

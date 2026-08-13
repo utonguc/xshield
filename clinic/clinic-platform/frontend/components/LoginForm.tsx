@@ -6,6 +6,7 @@ import { API_BASE_URL, setToken } from "@/lib/api";
 
 export default function LoginForm() {
   const router = useRouter();
+  const [tenantId, setTenantId] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -23,7 +24,7 @@ export default function LoginForm() {
       const response = await fetch(`${API_BASE_URL}/Auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, tenantId: tenantId.trim() || undefined }),
       });
 
       const data = await response.json();
@@ -67,6 +68,26 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "grid", gap: 20 }}>
+      {/* Klinik ID */}
+      <div style={{ display: "grid", gap: 6 }}>
+        <label style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2, #344054)" }}>
+          Klinik ID
+        </label>
+        <input
+          type="text"
+          value={tenantId}
+          onChange={(e) => setTenantId(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
+          placeholder="Örn: istanbulgoz"
+          autoComplete="organization"
+          style={inputBase}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "#1d4ed8")}
+          onBlur={(e) => (e.currentTarget.style.borderColor = "#e4e7ec")}
+        />
+        <span style={{ fontSize: 11, color: "#98a2b3" }}>
+          Demo hesabı oluştururken size verilen klinik kimliğiniz
+        </span>
+      </div>
+
       {/* E-posta */}
       <div style={{ display: "grid", gap: 6 }}>
         <label style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2, #344054)" }}>

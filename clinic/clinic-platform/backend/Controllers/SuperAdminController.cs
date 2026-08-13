@@ -3,6 +3,7 @@ using System.Security.Claims;
 using ClinicPlatform.Api.Data;
 using ClinicPlatform.Api.DTOs;
 using ClinicPlatform.Api.Models;
+using ClinicPlatform.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,9 +15,14 @@ namespace ClinicPlatform.Api.Controllers;
 [Authorize(Roles = "SuperAdmin")]
 public class SuperAdminController : ControllerBase
 {
-    private readonly AppDbContext _db;
+    private readonly AppDbContext  _db;
+    private readonly ITokenService _tokenService;
 
-    public SuperAdminController(AppDbContext db) => _db = db;
+    public SuperAdminController(AppDbContext db, ITokenService tokenService)
+    {
+        _db           = db;
+        _tokenService = tokenService;
+    }
 
     // GET api/superadmin/clinics
     [HttpGet("clinics")]
@@ -257,4 +263,58 @@ public class SuperAdminController : ControllerBase
     [HttpGet("modules")]
     public IActionResult GetAllModules() =>
         Ok(ModuleCodes.Labels.Select(kv => new { code = kv.Key, label = kv.Value }));
+
+    // PUT api/superadmin/clinics/{clinicId}/users/{userId}/reset-password
+    [HttpPut("clinics/{clinicId:guid}/users/{userId:guid}/reset-password")]
+    public async Task<IActionResult> ResetUserPassword(Guid clinicId, Guid userId, [FromBody] ResetPasswordRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.NewPassword) || req.NewPassword.Length < 6)
+            return BadRequest(new { message = "Şifre en az 6 karakter olmalı." });
+
+        var user = await _db.Users.FirstOrDefaultAsync(x => x.Id == userId && x.ClinicId == clinicId);
+        if (user is null) return NotFound(new { message = "Kullanıcı bulunamadı." });
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.NewPassword);
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Şifre güncellendi." });
+    }
+
+    // POST api/superadmin/clinics/{id}/impersonate
+    [HttpPost("clinics/{id:guid}/impersonate")]
+    public async Task<IActionResult> Impersonate(Guid id, [FromBody] ImpersonateRequest? req)
+    {
+        var clinic = await _db.Clinics.FindAsync(id);
+        if (clinic is null) return NotFound(new { message = "Klinik bulunamadı." });
+        if (!clinic.IsActive) return BadRequest(new { message = "Klinik pasif." });
+
+        User? target;
+        if (req?.UserId.HasValue == true)
+        {
+            target = await _db.Users
+                .Include(x => x.Role)
+                .Include(x => x.Clinic)
+                .FirstOrDefaultAsync(x => x.Id == req.UserId.Value && x.ClinicId == id);
+        }
+        else
+        {
+            target = await _db.Users
+                .Include(x => x.Role)
+                .Include(x => x.Clinic)
+                .Where(x => x.ClinicId == id && x.IsActive && x.Role != null && x.Role.Name == "KlinikYonetici")
+                .FirstOrDefaultAsync();
+        }
+
+        if (target is null)
+            return NotFound(new { message = "Hedef kullanıcı bulunamadı." });
+
+        var token = _tokenService.CreateToken(target);
+        return Ok(new
+        {
+            accessToken = token,
+            clinicName  = clinic.Name,
+            userName    = target.UserName,
+            fullName    = target.FullName,
+            role        = target.Role?.Name,
+        });
+    }
 }

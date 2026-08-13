@@ -87,6 +87,10 @@ export const en = {
     submitting: "Signing in…",
     back_home: "← Back to home",
     invalid: "Invalid credentials",
+    or_continue: "or continue with",
+    sign_in_google: "Sign in with Google",
+    sign_in_microsoft: "Sign in with Microsoft 365",
+    oauth_error: "Sign-in failed. Make sure your account has been added by an administrator.",
   },
 
   // ── Portal ─────────────────────────────────────────────────────────────────
@@ -487,6 +491,10 @@ export const tr: typeof en = {
     submitting: "Giriş yapılıyor…",
     back_home: "← Ana sayfaya dön",
     invalid: "Geçersiz kullanıcı adı veya şifre",
+    or_continue: "veya şununla devam edin",
+    sign_in_google: "Google ile giriş yap",
+    sign_in_microsoft: "Microsoft 365 ile giriş yap",
+    oauth_error: "Giriş başarısız. Hesabınızın yönetici tarafından eklendiğinden emin olun.",
   },
 
   portal: {

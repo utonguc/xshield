@@ -25,6 +25,14 @@ def _run_migrations():
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS azure_last_sync_at TIMESTAMPTZ",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS azure_last_sync_created INTEGER DEFAULT 0",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS azure_last_sync_updated INTEGER DEFAULT 0",
+        # Google Workspace sync metadata on tenants
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS gws_last_sync_at TIMESTAMPTZ",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS gws_last_sync_created INTEGER DEFAULT 0",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS gws_last_sync_updated INTEGER DEFAULT 0",
+        # SSO / OAuth columns on admin_users
+        "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20)",
+        "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS oauth_sub TEXT",
+        "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS oauth_refresh_token TEXT",
         # Marketing banners table
         """
         CREATE TABLE IF NOT EXISTS banners (

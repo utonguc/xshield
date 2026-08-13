@@ -146,4 +146,62 @@ public class UsersController : ControllerBase
 
         return Ok(user.Id);
     }
+
+    // GET api/users/{id}/menu-permissions
+    [HttpGet("{id:guid}/menu-permissions")]
+    public async Task<IActionResult> GetMenuPermissions(Guid id)
+    {
+        var currentUser = await GetCurrentUserAsync();
+        if (currentUser is null) return Unauthorized();
+
+        var target = await _db.Users.Include(x => x.Role)
+            .FirstOrDefaultAsync(x => x.Id == id && x.ClinicId == currentUser.ClinicId);
+        if (target is null) return NotFound("Kullanıcı bulunamadı.");
+
+        var roleName = target.Role?.Name ?? "";
+        // Tam yetkili roller — null döner (kısıtsız)
+        if (roleName == "SuperAdmin" || roleName == "KlinikYonetici")
+            return Ok(new { fullAccess = true, menuKeys = (List<string>?)null });
+
+        var keys = await _db.UserMenuPermissions
+            .Where(p => p.UserId == id)
+            .Select(p => p.MenuKey)
+            .ToListAsync();
+
+        return Ok(new { fullAccess = false, menuKeys = keys });
+    }
+
+    // PUT api/users/{id}/menu-permissions
+    [HttpPut("{id:guid}/menu-permissions")]
+    public async Task<IActionResult> SetMenuPermissions(Guid id, [FromBody] SetUserMenuPermissionsRequest req)
+    {
+        var currentUser = await GetCurrentUserAsync();
+        if (currentUser is null) return Unauthorized();
+
+        var target = await _db.Users.Include(x => x.Role)
+            .FirstOrDefaultAsync(x => x.Id == id && x.ClinicId == currentUser.ClinicId);
+        if (target is null) return NotFound("Kullanıcı bulunamadı.");
+
+        // Tam yetkili rollere izin atama yapılmaz
+        var roleName = target.Role?.Name ?? "";
+        if (roleName == "SuperAdmin" || roleName == "KlinikYonetici")
+            return BadRequest(new { message = "Bu rol tam yetkilidir, menü kısıtlaması uygulanamaz." });
+
+        // Mevcut izinleri sil, yenilerini ekle
+        var existing = await _db.UserMenuPermissions.Where(p => p.UserId == id).ToListAsync();
+        _db.UserMenuPermissions.RemoveRange(existing);
+
+        var validKeys = req.MenuKeys.Distinct().Where(k => !string.IsNullOrWhiteSpace(k)).ToList();
+        foreach (var key in validKeys)
+        {
+            _db.UserMenuPermissions.Add(new ClinicPlatform.Api.Models.UserMenuPermission
+            {
+                UserId  = id,
+                MenuKey = key.ToLowerInvariant(),
+            });
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Yetkiler güncellendi.", count = validKeys.Count });
+    }
 }

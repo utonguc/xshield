@@ -1,0 +1,49 @@
+# goX — FreeRADIUS sql modülü (PostgreSQL, gox_db).
+# DB bilgileri entrypoint tarafından @...@ yer tutucularına yazılır.
+# Yetki/yanıt verileri radcheck/radreply VIEW'larından gelir (tek gerçek kaynak).
+sql {
+	dialect = "postgresql"
+	driver = "rlm_sql_${dialect}"
+
+	server   = "@DB_HOST@"
+	port     = @DB_PORT@
+	login    = "@DB_USER@"
+	password = "@DB_PASS@"
+	radius_db = "@DB_NAME@"
+
+	# Grup/profil/client okuma kapalı — yalnız radcheck/radreply kullanılıyor.
+	read_groups   = no
+	read_profiles = no
+	read_clients  = no
+
+	# %{SQL-User-Name} kaynağı (MAC = User-Name)
+	sql_user_name = "%{tolower:%{User-Name}}"
+	group_attribute = "SQL-Group"
+
+	# queries.conf'un parse için beklediği tablo adları
+	# (accounting/post-auth/group sorguları default site'ta çağrılmıyor)
+	authcheck_table  = "radcheck"
+	authreply_table  = "radreply"
+	groupcheck_table = "radgroupcheck"
+	groupreply_table = "radgroupreply"
+	usergroup_table  = "radusergroup"
+	acct_table1      = "radacct"
+	acct_table2      = "radacct"
+	postauth_table   = "radpostauth"
+	client_table     = "nas"
+
+	pool {
+		start = 1
+		min = 1
+		max = 5
+		spare = 1
+		uses = 0
+		retry_delay = 30
+		lifetime = 0
+		idle_timeout = 60
+	}
+
+	# Stok query seti (accounting/post-auth tanımlı ama default site'ta çağrılmıyor).
+	# authorize_check_query/authorize_reply_query → radcheck/radreply view'larını okur.
+	$INCLUDE ${modconfdir}/sql/main/${dialect}/queries.conf
+}

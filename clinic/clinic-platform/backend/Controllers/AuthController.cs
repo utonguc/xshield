@@ -41,22 +41,23 @@ public class AuthController : ControllerBase
 
         var email = request.Email.Trim().ToLowerInvariant();
 
-        // E-posta domain'inden kliniği belirle
-        var atIndex = email.IndexOf('@');
-        if (atIndex < 0)
+        if (!email.Contains('@'))
             return BadRequest(new { message = "Geçerli bir e-posta adresi girin." });
 
-        var domain = email[(atIndex + 1)..]; // ör: "klinik-a.com.tr"
+        Clinic? clinic = null;
+        User?   user   = null;
 
-        var clinic = await _db.Clinics
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.EmailDomain == domain);
-
-        User? user;
-
-        if (clinic is not null)
+        if (!string.IsNullOrWhiteSpace(request.TenantId))
         {
-            // Domain kayıtlı: sadece o kliniğin kullanıcısını ara
+            // Tenant ID ile klinik bul — gmail gibi ortak domainlerde kesin ayrım
+            var tenantSlug = request.TenantId.Trim().ToLowerInvariant();
+            clinic = await _db.Clinics
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.TenantId == tenantSlug);
+
+            if (clinic is null)
+                return Unauthorized(new { message = "Klinik ID bulunamadı. Lütfen kontrol edin." });
+
             user = await _db.Users
                 .Include(x => x.Role)
                 .Include(x => x.Clinic)
@@ -64,20 +65,36 @@ public class AuthController : ControllerBase
         }
         else
         {
-            // Domain kayıtlı değil: e-posta ile global ara
-            // (SuperAdmin veya EmailDomain henüz tanımlanmamış klinikler için fallback)
-            var matches = await _db.Users
-                .Include(x => x.Role)
-                .Include(x => x.Clinic)
-                .Where(x => x.Email == email)
-                .ToListAsync();
+            // Geriye dönük uyumluluk: email domain'inden klinik bul (veya global tek eşleşme)
+            var domain = email[(email.IndexOf('@') + 1)..];
 
-            if (matches.Count > 1)
-                return Unauthorized(new {
-                    message = "Bu e-posta birden fazla klinikte kayıtlı. Lütfen yöneticinizden klinik domain'ini tanımlamasını isteyin."
-                });
+            clinic = await _db.Clinics
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.EmailDomain == domain);
 
-            user = matches.FirstOrDefault();
+            if (clinic is not null)
+            {
+                user = await _db.Users
+                    .Include(x => x.Role)
+                    .Include(x => x.Clinic)
+                    .FirstOrDefaultAsync(x => x.ClinicId == clinic.Id && x.Email == email);
+            }
+            else
+            {
+                // SuperAdmin veya TenantId/EmailDomain henüz tanımlanmamış klinikler
+                var matches = await _db.Users
+                    .Include(x => x.Role)
+                    .Include(x => x.Clinic)
+                    .Where(x => x.Email == email)
+                    .ToListAsync();
+
+                if (matches.Count > 1)
+                    return Unauthorized(new {
+                        message = "Bu e-posta birden fazla klinikte kayıtlı. Lütfen Klinik ID'nizi girerek tekrar deneyin."
+                    });
+
+                user = matches.FirstOrDefault();
+            }
         }
 
         if (user is null || !user.IsActive || user.Clinic is null || !user.Clinic.IsActive)
@@ -126,6 +143,17 @@ public class AuthController : ControllerBase
             .Select(x => x.ModuleCode)
             .ToListAsync();
 
+        // SuperAdmin ve KlinikYonetici'ye tam erişim (null = kısıtsız)
+        List<string>? allowedMenus = null;
+        var roleName = user.Role?.Name ?? "";
+        if (roleName != "SuperAdmin" && roleName != "KlinikYonetici")
+        {
+            allowedMenus = await _db.UserMenuPermissions
+                .Where(p => p.UserId == user.Id)
+                .Select(p => p.MenuKey)
+                .ToListAsync();
+        }
+
         return Ok(new MeResponse
         {
             UserId = user.Id.ToString(),
@@ -137,6 +165,7 @@ public class AuthController : ControllerBase
             Role = user.Role?.Name,
             ActiveModules = activeModules,
             ProfilePhotoUrl = user.ProfilePhotoUrl,
+            AllowedMenus = allowedMenus,
         });
     }
 

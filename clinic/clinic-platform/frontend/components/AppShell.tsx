@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef, useCallback } from "react";
-import { clearToken, apiFetch, staticUrl } from "@/lib/api";
+import { clearToken, apiFetch, staticUrl, exitImpersonation, getImpersonatingClinic } from "@/lib/api";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useTheme } from "@/hooks/useTheme";
 import GlobalSearch, { useGlobalSearch } from "@/components/GlobalSearch";
@@ -324,8 +324,9 @@ export default function AppShell({
   const [showNotifs,  setShowNotifs]  = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
 
-  const [annCount,     setAnnCount]     = useState(0);
-  const [showSupport,  setShowSupport]  = useState(false);
+  const [annCount,          setAnnCount]          = useState(0);
+  const [showSupport,       setShowSupport]        = useState(false);
+  const [impersonatingClinic, setImpersonatingClinic] = useState<string | null>(null);
 
   /* ── Data loading ── */
   useEffect(() => {
@@ -353,6 +354,8 @@ export default function AppShell({
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setAnnCount(d.count ?? 0); })
       .catch(() => {});
+
+    setImpersonatingClinic(getImpersonatingClinic());
 
     return () => clearInterval(timer);
   }, []);
@@ -818,6 +821,29 @@ export default function AppShell({
             )}
           </div>
         </header>
+
+        {/* Impersonation banner */}
+        {impersonatingClinic && (
+          <div style={{
+            background: "#7f1d1d", color: "#fecaca",
+            padding: "8px 20px", fontSize: 13, fontWeight: 700,
+            display: "flex", alignItems: "center", gap: 10,
+            borderBottom: "2px solid #991b1b", flexShrink: 0,
+          }}>
+            <ShieldCheck size={16} />
+            <span><strong>{impersonatingClinic}</strong> kliniği adına bağlısınız</span>
+            <button
+              onClick={() => { exitImpersonation(); window.location.href = "/superadmin"; }}
+              style={{
+                marginLeft: "auto", padding: "4px 14px", borderRadius: 8,
+                background: "#991b1b", border: "1px solid #b91c1c",
+                color: "#fecaca", cursor: "pointer", fontWeight: 700, fontSize: 12,
+              }}
+            >
+              Bağlantıyı Kes
+            </button>
+          </div>
+        )}
 
         {/* Trial warning banner */}
         <TrialBanner />

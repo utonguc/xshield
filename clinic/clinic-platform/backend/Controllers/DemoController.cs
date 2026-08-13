@@ -56,15 +56,22 @@ public class DemoController : ControllerBase
         // Geçici şifre üret (8 karakter: büyük + küçük + rakam)
         var tempPassword = GeneratePassword();
 
+        // TenantId slug üret: klinik adını normalize et
+        var tenantId = GenerateTenantSlug(req.ClinicName);
+        // Çakışma varsa 3 haneli suffix ekle
+        while (await _db.Clinics.AnyAsync(c => c.TenantId == tenantId))
+            tenantId = $"{GenerateTenantSlug(req.ClinicName)}{new Random().Next(100, 999)}";
+
         // Klinik oluştur
         var clinic = new Clinic
         {
-            Name          = req.ClinicName.Trim(),
-            City          = req.City?.Trim(),
-            Country       = "Türkiye",
-            IsActive      = true,
-            Plan          = "trial",
+            Name           = req.ClinicName.Trim(),
+            City           = req.City?.Trim(),
+            Country        = "Türkiye",
+            IsActive       = true,
+            Plan           = "trial",
             TrialEndsAtUtc = DateTime.UtcNow.AddDays(30),
+            TenantId       = tenantId,
         };
         _db.Clinics.Add(clinic);
         await _db.SaveChangesAsync();
@@ -119,6 +126,7 @@ public class DemoController : ControllerBase
         return Ok(new
         {
             message      = "Demo hesabınız oluşturuldu!",
+            tenantId,
             userName,
             tempPassword,
             trialEndsAt  = clinic.TrialEndsAtUtc!.Value.ToString("dd.MM.yyyy"),
@@ -143,6 +151,23 @@ public class DemoController : ControllerBase
                             ? (int)Math.Max(0, (clinic.TrialEndsAtUtc.Value - DateTime.UtcNow).TotalDays)
                             : (int?)null,
         });
+    }
+
+    private static string GenerateTenantSlug(string clinicName)
+    {
+        var tr = new Dictionary<char, char>
+        {
+            ['ğ']='g',['Ğ']='g',['ü']='u',['Ü']='u',['ş']='s',['Ş']='s',
+            ['ı']='i',['İ']='i',['ö']='o',['Ö']='o',['ç']='c',['Ç']='c',
+        };
+        var sb = new System.Text.StringBuilder();
+        foreach (var ch in clinicName.ToLower())
+        {
+            if (tr.TryGetValue(ch, out var mapped)) sb.Append(mapped);
+            else if (char.IsLetterOrDigit(ch))      sb.Append(ch);
+        }
+        var slug = sb.ToString();
+        return slug.Length > 20 ? slug[..20] : slug;
     }
 
     private static string GeneratePassword()

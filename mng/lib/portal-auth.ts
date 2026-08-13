@@ -53,7 +53,13 @@ export async function createPortalSession(user: PortalSession): Promise<void> {
 
 export async function deletePortalSession(): Promise<void> {
   const jar = await cookies();
-  jar.delete(COOKIE);
+  jar.set(COOKIE, "", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/portal",
+    maxAge: 0,
+  });
 }
 
 export function generateOtp(): string {

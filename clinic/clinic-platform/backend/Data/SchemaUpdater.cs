@@ -202,7 +202,18 @@ public static class SchemaUpdater
                     ON "Clinics"("EmailDomain") WHERE "EmailDomain" IS NOT NULL;
             END IF;
 
+            -- TenantId on Clinics (short slug for tenant-based login, e.g. "istanbulgoz")
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'Clinics' AND column_name = 'TenantId'
+            ) THEN
+                ALTER TABLE "Clinics" ADD COLUMN "TenantId" varchar(50);
+            END IF;
+
         END $$;
+
+        CREATE UNIQUE INDEX IF NOT EXISTS ix_clinics_tenantid
+            ON "Clinics"("TenantId") WHERE "TenantId" IS NOT NULL;
 
         CREATE INDEX IF NOT EXISTS ix_wa_logs_appointment ON "WhatsAppLogs"("AppointmentId", "MessageType")
             WHERE "AppointmentId" IS NOT NULL;
@@ -316,6 +327,17 @@ public static class SchemaUpdater
                 FOREIGN KEY ("TicketId") REFERENCES "SupportTickets"("Id") ON DELETE CASCADE
         );
         CREATE INDEX IF NOT EXISTS ix_ticketreplies_ticket ON "SupportTicketReplies"("TicketId");
+
+        -- TABLE: UserMenuPermissions (kullanıcı bazlı menü yetki sistemi)
+        CREATE TABLE IF NOT EXISTS "UserMenuPermissions" (
+            "Id"      uuid        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+            "UserId"  uuid        NOT NULL,
+            "MenuKey" varchar(50) NOT NULL,
+            CONSTRAINT fk_umenuperm_user
+                FOREIGN KEY ("UserId") REFERENCES "Users"("Id") ON DELETE CASCADE
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS ix_umenuperm_unique ON "UserMenuPermissions"("UserId", "MenuKey");
+        CREATE INDEX IF NOT EXISTS ix_umenuperm_user ON "UserMenuPermissions"("UserId");
 
         """;
 }

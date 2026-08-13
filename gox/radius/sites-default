@@ -1,0 +1,39 @@
+# goX — default virtual server (MAC tabanlı yetkilendirme).
+# sql, radcheck'ten Auth-Type (Accept/Reject) ve radreply'dan hız/süre döndürür.
+server default {
+	listen {
+		type = auth
+		ipaddr = *
+		port = 1812
+	}
+	listen {
+		type = acct
+		ipaddr = *
+		port = 1813
+	}
+
+	authorize {
+		preprocess
+		sql
+		# radcheck'te kayıt yoksa Auth-Type set edilmez → bilinmeyen MAC reddedilir.
+		if (!&control:Auth-Type) {
+			reject
+		}
+	}
+
+	authenticate {
+		# Auth-Type Accept/Reject özel değerlerdir; ek bir authenticate gerekmez.
+	}
+
+	preacct {
+	}
+
+	accounting {
+		# Şimdilik DB accounting kapalı (radacct yok).
+	}
+
+	post-auth {
+		Post-Auth-Type REJECT {
+		}
+	}
+}

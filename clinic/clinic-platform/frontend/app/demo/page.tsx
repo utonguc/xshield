@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 
 type Result = {
   message: string;
+  tenantId: string;
   userName: string;
   tempPassword: string;
   trialEndsAt: string;
@@ -89,15 +90,17 @@ export default function DemoPage() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
+                  ["Klinik ID", result.tenantId],
                   ["E-posta", result.email ?? ""],
                   ["Şifre", result.tempPassword],
                 ].map(([label, val]) => (
-                  <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 13, color: "#64748b" }}>{label}</span>
+                  <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 13, color: "#64748b", flexShrink: 0 }}>{label}</span>
                     <span style={{
                       fontSize: 14, fontWeight: 800, fontFamily: "monospace",
                       background: "#fff", padding: "4px 12px", borderRadius: 8,
                       border: "1px solid #e2e8f0", color: "#0f172a",
+                      wordBreak: "break-all",
                     }}>{val}</span>
                   </div>
                 ))}

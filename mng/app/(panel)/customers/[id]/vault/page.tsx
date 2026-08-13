@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth";
 import { query, queryOne } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { CustomerModuleNav } from "@/components/CustomerModuleNav";
 import VaultClient from "./VaultClient";
 export const dynamic = "force-dynamic";
 
@@ -21,14 +22,17 @@ export default async function VaultPage({ params }: { params: Promise<{ id: stri
   );
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
         <Link href="/customers" style={{ color: "var(--text-dim)", fontSize: 13, textDecoration: "none" }}>Müşteriler</Link>
         <span style={{ color: "var(--text-dim)" }}>›</span>
         <Link href={`/customers/${id}`} style={{ color: "var(--text-dim)", fontSize: 13, textDecoration: "none" }}>{customer.company_name}</Link>
         <span style={{ color: "var(--text-dim)" }}>›</span>
         <span style={{ fontSize: 13, color: "var(--text)" }}>🔐 Erişim Bilgileri Kasası</span>
       </div>
-      <VaultClient customerId={Number(id)} customerName={customer.company_name} initialCredentials={credentials as any} />
+      <CustomerModuleNav customerId={id} active="vault" />
+      <div style={{ marginTop: 20 }}>
+        <VaultClient customerId={Number(id)} customerName={customer.company_name} initialCredentials={credentials as any} />
+      </div>
     </div>
   );
 }

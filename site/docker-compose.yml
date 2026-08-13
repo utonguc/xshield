@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  site_db:
+    image: postgres:16
+    container_name: site_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${SITE_DB_NAME:-sitedb}
+      POSTGRES_USER: ${SITE_DB_USER:-siteuser}
+      POSTGRES_PASSWORD: ${SITE_DB_PASS:-sitepass}
+    volumes:
+      - site_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SITE_DB_USER:-siteuser} -d ${SITE_DB_NAME:-sitedb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - xshield-net
+
+  site_backend:
+    build:
+      context: ./backend
+    container_name: site_backend
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=site_db;Port=5432;Database=${SITE_DB_NAME:-sitedb};Username=${SITE_DB_USER:-siteuser};Password=${SITE_DB_PASS:-sitepass}
+      Jwt__Key: ${SITE_JWT_KEY}
+      Jwt__Issuer: site-platform
+      Jwt__Audience: site-platform-users
+      Jwt__ExpireMinutes: 120
+      SuperAdmin__Token: ${SUPERADMIN_TOKEN}
+      SuperAdmin__Username: ${SUPERADMIN_USERNAME}
+      SuperAdmin__Password: ${SUPERADMIN_PASSWORD}
+      Telegram__BotToken: ${SITE_TELEGRAM_BOT_TOKEN:-}
+      Telegram__BotUsername: ${SITE_TELEGRAM_BOT_USERNAME:-}
+    depends_on:
+      site_db:
+        condition: service_healthy
+    networks:
+      - xshield-net
+
+  site_frontend:
+    build:
+      context: ./frontend
+    container_name: site_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://site_backend:8080
+    depends_on:
+      - site_backend
+    networks:
+      - xshield-net
+
+volumes:
+  site_postgres_data:
+
+networks:
+  xshield-net:
+    external: true

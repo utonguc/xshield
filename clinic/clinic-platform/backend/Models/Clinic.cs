@@ -9,6 +9,12 @@ public class Clinic
     public bool IsActive { get; set; } = true;
 
     /// <summary>
+    /// Kısa benzersiz klinik kimliği. Login ekranında girilir. Ör: "istanbulgoz"
+    /// Demo kayıtta klinik adından otomatik üretilir; sonradan değiştirilebilir.
+    /// </summary>
+    public string? TenantId { get; set; }
+
+    /// <summary>
     /// Personel login için e-posta domain doğrulaması. Ör: "klinik-a.com.tr"
     /// Bu domain'e sahip e-postalar otomatik olarak bu kliniğe yönlendirilir.
     /// </summary>

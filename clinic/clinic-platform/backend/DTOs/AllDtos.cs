@@ -6,6 +6,8 @@ public class LoginRequest
 {
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+    /// <summary>Klinik kimliği (tenant slug). Verilmezse eski email-domain fallback'i kullanılır.</summary>
+    public string? TenantId { get; set; }
 }
 
 public class LoginResponse
@@ -29,6 +31,13 @@ public class MeResponse
     public string? Role { get; set; }
     public List<string> ActiveModules { get; set; } = new();
     public string? ProfilePhotoUrl { get; set; }
+    // null = tam yetkili (SuperAdmin / KlinikYonetici), liste = yalnızca izin verilen menüler
+    public List<string>? AllowedMenus { get; set; }
+}
+
+public class SetUserMenuPermissionsRequest
+{
+    public List<string> MenuKeys { get; set; } = new();
 }
 
 public class ChangePasswordRequest
@@ -937,4 +946,9 @@ public class PagedResult<T>
     public int Page { get; set; }
     public int PageSize { get; set; }
     public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)Total / PageSize) : 0;
+}
+
+public class ImpersonateRequest
+{
+    public Guid? UserId { get; set; }
 }

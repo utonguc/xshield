@@ -42,6 +42,7 @@ public class AppDbContext : DbContext
     public DbSet<PlatformAnnouncementRead> PlatformAnnouncementReads => Set<PlatformAnnouncementRead>();
     public DbSet<SupportTicket>            SupportTickets            => Set<SupportTicket>();
     public DbSet<SupportTicketReply>       SupportTicketReplies      => Set<SupportTicketReply>();
+    public DbSet<UserMenuPermission>       UserMenuPermissions       => Set<UserMenuPermission>();
 
     protected override void OnModelCreating(ModelBuilder m)
     {
@@ -465,6 +466,16 @@ public class AppDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.AuthorName).HasMaxLength(200).IsRequired();
             e.HasIndex(x => x.TicketId);
+        });
+
+        // ── UserMenuPermissions ───────────────────────────────────────────────
+        m.Entity<UserMenuPermission>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.MenuKey).HasMaxLength(50).IsRequired();
+            e.HasOne(x => x.User).WithMany()
+                .HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.UserId, x.MenuKey }).IsUnique();
         });
 
         // ── StockItem ─────────────────────────────────────────────────────────

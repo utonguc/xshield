@@ -25,6 +25,11 @@ class Tenant(Base):
     azure_last_sync_created = Column(Integer, default=0)
     azure_last_sync_updated = Column(Integer, default=0)
 
+    # Google Workspace sync metadata
+    gws_last_sync_at      = Column(DateTime, nullable=True)
+    gws_last_sync_created = Column(Integer, default=0)
+    gws_last_sync_updated = Column(Integer, default=0)
+
     domains       = relationship("Domain",       back_populates="tenant", cascade="all, delete-orphan")
     users         = relationship("User",         back_populates="tenant", cascade="all, delete-orphan")
     templates     = relationship("Template",     back_populates="tenant", cascade="all, delete-orphan")
@@ -107,12 +112,17 @@ class ApiKey(Base):
 class AdminUser(Base):
     __tablename__ = "admin_users"
 
-    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email         = Column(Text, unique=True, nullable=False)
-    password_hash = Column(Text, nullable=False)
-    role          = Column(String(20), nullable=False, default="super_admin")
-    tenant_id     = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=True)
-    created_at    = Column(DateTime, default=datetime.utcnow)
+    id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email               = Column(Text, unique=True, nullable=False)
+    password_hash       = Column(Text, nullable=False)
+    role                = Column(String(20), nullable=False, default="super_admin")
+    tenant_id           = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=True)
+    created_at          = Column(DateTime, default=datetime.utcnow)
+
+    # SSO / OAuth
+    oauth_provider      = Column(String(20), nullable=True)   # 'google' | 'microsoft'
+    oauth_sub           = Column(Text, nullable=True)          # provider user ID
+    oauth_refresh_token = Column(Text, nullable=True)
 
     tenant = relationship("Tenant", back_populates="admin_users")
 

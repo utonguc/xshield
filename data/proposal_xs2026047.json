@@ -1,0 +1,9 @@
+{
+  "gelistirme": 38000,
+  "veri_aktarimi": 2500,
+  "altyapi": 1500,
+  "egitim": 1000,
+  "garanti": 2000,
+  "sunucu_min": 800,
+  "sunucu_max": 1000
+}

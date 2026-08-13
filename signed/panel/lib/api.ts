@@ -287,3 +287,30 @@ export const testAzureConnection = (token: string, tenantId: string) =>
     `/v1/admin/tenants/${tenantId}/integrations/azure/test`, token,
     { method: "POST" }
   );
+
+// ── Google Workspace integration ───────────────────────────────────────────────
+
+export interface GoogleWorkspaceStatus {
+  connected:          boolean;
+  admin_email:        string | null;
+  last_sync_at:       string | null;
+  last_sync_created:  number;
+  last_sync_updated:  number;
+}
+
+export const getGoogleWorkspaceStatus = (token: string, tenantId: string) =>
+  apiFetch<GoogleWorkspaceStatus>(
+    `/v1/admin/tenants/${tenantId}/integrations/google`, token
+  );
+
+export const syncGoogleWorkspaceUsers = (token: string, tenantId: string) =>
+  apiFetch<{ created: number; updated: number; errors: string[]; synced_at: string }>(
+    `/v1/admin/tenants/${tenantId}/integrations/google/sync`, token,
+    { method: "POST" }
+  );
+
+export const testGoogleWorkspaceConnection = (token: string, tenantId: string) =>
+  apiFetch<{ status: string; user_count: number; admin_email: string }>(
+    `/v1/admin/tenants/${tenantId}/integrations/google/test`, token,
+    { method: "POST" }
+  );

@@ -3,6 +3,7 @@ import { query, queryOne } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import Link from "next/link";
 import CyberClient from "./CyberClient";
+import { CustomerModuleNav } from "@/components/CustomerModuleNav";
 
 export const dynamic = "force-dynamic";
 
@@ -36,11 +37,11 @@ export default async function CyberPage({ params }: { params: Promise<{ id: stri
        WHERE c.customer_id=$1 ORDER BY c.created_at DESC`,
       [Number(id)]
     ),
-    query<{ id: number; name: string; category: string; subject: string; sender_name: string }>(
-      "SELECT id,name,category,subject,sender_name FROM phishing_email_templates ORDER BY is_builtin DESC, name"
+    query<{ id: number; name: string; category: string; subject: string; sender_name: string; html_body: string | null }>(
+      "SELECT id,name,category,subject,sender_name,html_body FROM phishing_email_templates ORDER BY is_builtin DESC, name"
     ),
-    query<{ id: number; name: string; category: string; description: string | null }>(
-      "SELECT id,name,category,description FROM phishing_page_templates ORDER BY is_builtin DESC, name"
+    query<{ id: number; name: string; category: string; description: string | null; html_content: string | null }>(
+      "SELECT id,name,category,description,html_content FROM phishing_page_templates ORDER BY is_builtin DESC, name"
     ),
     query<{
       id: number; name: string; type: string; scope: string | null;
@@ -60,10 +61,11 @@ export default async function CyberPage({ params }: { params: Promise<{ id: stri
   if (!customer) return notFound();
 
   return (
-    <div style={{ maxWidth: 980, margin: "0 auto", padding: "24px 16px" }}>
-      <Link href={`/customers/${id}`} style={{ fontSize: 13, color: "var(--text-dim)", textDecoration: "none", display: "inline-block", marginBottom: 20 }}>
+    <div style={{ maxWidth: 980, margin: "0 auto", padding: "24px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <Link href={`/customers/${id}`} style={{ fontSize: 13, color: "var(--text-dim)", textDecoration: "none" }}>
         ← {customer.company_name}
       </Link>
+      <CustomerModuleNav customerId={id} active="cyber" />
       <CyberClient
         customerId={customer.id}
         customerName={customer.company_name}

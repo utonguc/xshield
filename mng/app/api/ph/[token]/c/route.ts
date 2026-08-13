@@ -12,7 +12,7 @@ export async function GET(
 ) {
   const { token } = await params;
   await queryOne(
-    "UPDATE phishing_targets SET clicked_at=COALESCE(clicked_at,NOW()) WHERE token=$1",
+    "UPDATE phishing_targets SET opened_at=COALESCE(opened_at,NOW()), clicked_at=COALESCE(clicked_at,NOW()) WHERE token=$1",
     [token]
   );
   return NextResponse.redirect(`${BASE}/api/ph/${token}/land`, { status: 302 });

@@ -258,11 +258,11 @@ export default async function CustomerDetailPage({
   const session = await getSession();
 
   const [
-    customer, tickets, payments, documents, empCount, invCount, vcCount, licCount, vaultCount,
-    complianceCount, riskCount, changeCount, cyberCount,
+    customer, tickets, payments, documents, empCount, invCount,
     financials, monitors, agentStats, notes, openCount,
     portalUsers, permissionGroups, agentsWithAdSync,
     adConfig, lastAdSync,
+    vendorContractCount, licenseCount, complianceCount, riskCount, rfcCount, pentestCount, vaultCount,
   ] = await Promise.all([
     queryOne<{
       id: number; company_name: string; contact_name: string; contact_email: string;
@@ -289,13 +289,6 @@ export default async function CustomerDetailPage({
 
     queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_employees WHERE customer_id=$1", [id]),
     queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM inventory_items WHERE customer_id=$1", [id]),
-    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_vendor_contracts WHERE customer_id=$1", [id]),
-    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_licenses WHERE customer_id=$1", [id]),
-    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM credential_vaults WHERE customer_id=$1", [id]),
-    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM compliance_tasks WHERE customer_id=$1 AND is_active=true", [id]),
-    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_risks WHERE customer_id=$1 AND status NOT IN ('closed','accepted')", [id]),
-    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM change_requests WHERE customer_id=$1 AND status NOT IN ('completed','cancelled','rejected')", [id]),
-    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM phishing_campaigns WHERE customer_id=$1", [id]),
 
     // Finansal özet
     queryOne<{ paid_ytd: string; overdue_total: string; overdue_count: string }>(
@@ -388,6 +381,15 @@ export default async function CustomerDetailPage({
       "SELECT synced_at, users_total, users_created, users_updated, users_deactivated, status, message FROM ad_sync_logs WHERE customer_id=$1 ORDER BY synced_at DESC LIMIT 1",
       [id]
     ),
+
+    // Modül sayaçları
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_vendor_contracts WHERE customer_id=$1", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_licenses WHERE customer_id=$1", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM compliance_tasks WHERE customer_id=$1 AND is_active=true", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM customer_risks WHERE customer_id=$1 AND status='open'", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM change_requests WHERE customer_id=$1", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM pentest_projects WHERE customer_id=$1", [id]),
+    queryOne<{ count: string }>("SELECT COUNT(*)::text AS count FROM credential_vaults WHERE customer_id=$1", [id]),
   ]);
 
   if (!customer) notFound();
@@ -410,13 +412,6 @@ export default async function CustomerDetailPage({
   const isAdmin       = session?.role === "admin";
   const numEmployees  = parseInt(empCount?.count  ?? "0", 10);
   const numInventory  = parseInt(invCount?.count  ?? "0", 10);
-  const numVendorContracts = parseInt(vcCount?.count ?? "0", 10);
-  const numLicenses = parseInt(licCount?.count ?? "0", 10);
-  const numVault    = parseInt(vaultCount?.count ?? "0", 10);
-  const numCompliance = parseInt(complianceCount?.count ?? "0", 10);
-  const numRisks    = parseInt(riskCount?.count ?? "0", 10);
-  const numChanges  = parseInt(changeCount?.count ?? "0", 10);
-  const numCyber    = parseInt(cyberCount?.count ?? "0", 10);
   const numOpenTickets = parseInt(openCount?.count ?? "0", 10);
   const paidYtd       = Number(financials?.paid_ytd    ?? 0);
   const overdueTotal  = Number(financials?.overdue_total ?? 0);
@@ -428,6 +423,14 @@ export default async function CustomerDetailPage({
 
   const monitorsDown = monitors.filter(m => m.last_is_up === false && m.enabled).length;
   const monitorsUp   = monitors.filter(m => m.last_is_up === true  && m.enabled).length;
+
+  const numVendorContracts = parseInt(vendorContractCount?.count ?? "0", 10);
+  const numLicenses        = parseInt(licenseCount?.count          ?? "0", 10);
+  const numCompliance      = parseInt(complianceCount?.count       ?? "0", 10);
+  const numRisks           = parseInt(riskCount?.count             ?? "0", 10);
+  const numRfc             = parseInt(rfcCount?.count              ?? "0", 10);
+  const numSiber           = parseInt(pentestCount?.count          ?? "0", 10);
+  const numVault           = parseInt(vaultCount?.count            ?? "0", 10);
 
   return (
     <>
@@ -450,42 +453,6 @@ export default async function CustomerDetailPage({
             </div>
           </div>
           <div className="actions">
-            <Link href={`/customers/${id}/employees`} className="btn-stat">
-              <span className="stat-num">{numEmployees}</span>
-              <span className="stat-lbl">Çalışan</span>
-            </Link>
-            <Link href={`/inventory?customer=${id}`} className="btn-stat">
-              <span className="stat-num">{numInventory}</span>
-              <span className="stat-lbl">Envanter</span>
-            </Link>
-            <Link href={`/customers/${id}/vendor-contracts`} className="btn-stat">
-              <span className="stat-num">{numVendorContracts}</span>
-              <span className="stat-lbl">Dış Söz.</span>
-            </Link>
-            <Link href={`/customers/${id}/licenses`} className="btn-stat">
-              <span className="stat-num">{numLicenses}</span>
-              <span className="stat-lbl">Lisanslar</span>
-            </Link>
-            <Link href={`/customers/${id}/vault`} className="btn-stat">
-              <span className="stat-num">{numVault}</span>
-              <span className="stat-lbl">Kasa</span>
-            </Link>
-            <Link href={`/customers/${id}/compliance`} className="btn-stat">
-              <span className="stat-num">{numCompliance}</span>
-              <span className="stat-lbl">Kontrol</span>
-            </Link>
-            <Link href={`/customers/${id}/risks`} className="btn-stat">
-              <span className="stat-num">{numRisks}</span>
-              <span className="stat-lbl">Risk</span>
-            </Link>
-            <Link href={`/customers/${id}/changes`} className="btn-stat">
-              <span className="stat-num">{numChanges}</span>
-              <span className="stat-lbl">RFC</span>
-            </Link>
-            <Link href={`/customers/${id}/cyber`} className="btn-stat">
-              <span className="stat-num">{numCyber}</span>
-              <span className="stat-lbl">Siber</span>
-            </Link>
             <Link href={`/tickets/new?customer=${id}`} className="btn-quick">+ Talep</Link>
             {isAdmin && (
               <>
@@ -500,6 +467,50 @@ export default async function CustomerDetailPage({
             )}
           </div>
         </div>
+
+        {/* ── Modül Navigasyonu ── */}
+        <nav className="mod-nav">
+          <Link href={`/customers/${id}`} className="mod-item mod-active">
+            <span className="mod-icon">⊙</span>
+            <span className="mod-lbl">Genel</span>
+          </Link>
+          <Link href={`/customers/${id}/employees`} className="mod-item">
+            <span className="mod-num">{numEmployees}</span>
+            <span className="mod-lbl">Çalışanlar</span>
+          </Link>
+          <Link href={`/inventory?customer=${id}`} className="mod-item">
+            <span className="mod-num">{numInventory}</span>
+            <span className="mod-lbl">Envanter</span>
+          </Link>
+          <Link href={`/customers/${id}/contracts`} className="mod-item">
+            <span className="mod-num">{numVendorContracts}</span>
+            <span className="mod-lbl">Dış Söz.</span>
+          </Link>
+          <Link href={`/customers/${id}/licenses`} className="mod-item">
+            <span className="mod-num">{numLicenses}</span>
+            <span className="mod-lbl">Lisanslar</span>
+          </Link>
+          <Link href={`/customers/${id}/vault`} className="mod-item">
+            <span className="mod-num">{numVault}</span>
+            <span className="mod-lbl">Kasa</span>
+          </Link>
+          <Link href={`/customers/${id}/compliance`} className="mod-item">
+            <span className="mod-num">{numCompliance}</span>
+            <span className="mod-lbl">Kontrol</span>
+          </Link>
+          <Link href={`/customers/${id}/risks`} className="mod-item">
+            <span className="mod-num">{numRisks}</span>
+            <span className="mod-lbl">Risk</span>
+          </Link>
+          <Link href={`/customers/${id}/rfc`} className="mod-item">
+            <span className="mod-num">{numRfc}</span>
+            <span className="mod-lbl">RFC</span>
+          </Link>
+          <Link href={`/customers/${id}/cyber`} className="mod-item">
+            <span className="mod-num">{numSiber}</span>
+            <span className="mod-lbl">Siber</span>
+          </Link>
+        </nav>
 
         {/* ── KPI Kartları ── */}
         <div className="kpi-row">
@@ -1062,10 +1073,6 @@ const css = `
 .title{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-0.5px;margin-bottom:6px}
 .status-badge{display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;border:1px solid}
 .actions{display:flex;gap:8px;flex-shrink:0;align-items:center;flex-wrap:wrap}
-.btn-stat{display:flex;flex-direction:column;align-items:center;padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--card);text-decoration:none;min-width:56px;gap:1px}
-.btn-stat:hover{background:var(--row-hover)}
-.stat-num{font-size:17px;font-weight:800;color:var(--text);line-height:1}
-.stat-lbl{font-size:10px;font-weight:600;color:var(--text-dimmer);text-transform:uppercase;letter-spacing:.06em}
 .btn-quick{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;color:#22c55e;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.08);white-space:nowrap}
 .btn-quick:hover{background:rgba(34,197,94,.15)}
 .btn-edit{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;color:#3b82f6;border:1px solid rgba(59,130,246,.3);background:rgba(59,130,246,.08)}
@@ -1264,6 +1271,18 @@ const css = `
 .pu-form-hint{font-size:11px;color:var(--text-ghost);flex:1}
 .btn-pu-create{padding:9px 20px;border-radius:7px;font-size:13px;font-weight:700;background:#2563eb;color:#fff;border:none;cursor:pointer;white-space:nowrap}
 .btn-pu-create:hover{background:#1d4ed8}
+
+/* Module Nav */
+.mod-nav{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.mod-nav::-webkit-scrollbar{height:3px}
+.mod-nav::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.mod-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 14px;border-radius:9px;border:1px solid var(--border2);background:var(--card);text-decoration:none;white-space:nowrap;flex-shrink:0;min-width:60px;transition:background .15s,border-color .15s}
+.mod-item:hover{background:var(--row-hover);border-color:var(--border)}
+.mod-active{background:rgba(59,130,246,.06);border-color:rgba(59,130,246,.35)!important}
+.mod-num{font-size:16px;font-weight:800;color:var(--text);line-height:1}
+.mod-icon{font-size:15px;line-height:1;color:#3b82f6}
+.mod-lbl{font-size:10px;font-weight:600;color:var(--text-dimmer);text-transform:uppercase;letter-spacing:.05em}
+@media(max-width:640px){.mod-item{padding:8px 11px;min-width:52px}.mod-num{font-size:14px}}
 
 /* AD Sync */
 .ad-sync-wrap{background:rgba(99,102,241,.04);border:1px solid rgba(99,102,241,.15);border-radius:8px;overflow:hidden;margin-bottom:14px}

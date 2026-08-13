@@ -24,6 +24,32 @@ export function clearToken() {
   localStorage.removeItem("accessToken");
 }
 
+/* ── Impersonation helpers ─────────────────────────────────────────── */
+export function enterImpersonation(token: string, clinicName: string): void {
+  if (typeof window === "undefined") return;
+  const original = localStorage.getItem("accessToken");
+  if (original) localStorage.setItem("originalToken", original);
+  localStorage.setItem("accessToken", token);
+  localStorage.setItem("impersonatingClinic", clinicName);
+}
+
+export function exitImpersonation(): void {
+  if (typeof window === "undefined") return;
+  const original = localStorage.getItem("originalToken");
+  if (original) {
+    localStorage.setItem("accessToken", original);
+  } else {
+    localStorage.removeItem("accessToken");
+  }
+  localStorage.removeItem("originalToken");
+  localStorage.removeItem("impersonatingClinic");
+}
+
+export function getImpersonatingClinic(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("impersonatingClinic");
+}
+
 export async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const token = getToken();
 

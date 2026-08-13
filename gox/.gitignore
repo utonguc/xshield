@@ -1,0 +1,10 @@
+# build artifacts
+/api/gox-api
+*.exe
+# env / secrets — VPS tek gerçek kaynak
+.env
+*.local
+# node (panel)
+node_modules/
+.svelte-kit/
+build/

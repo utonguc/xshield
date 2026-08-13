@@ -146,6 +146,17 @@ async function togglePortalUser(fd: FormData) {
   redirect(`/settings?tab=portal&_toast=${encodeURIComponent("Kullanıcı durumu güncellendi")}&_tt=info`);
 }
 
+async function changePortalUserGroup(fd: FormData) {
+  "use server";
+  const session = await getSession();
+  if (session?.role !== "admin") return;
+  const id       = fd.get("id");
+  const group_id = fd.get("permission_group_id");
+  if (!id || !group_id) return;
+  await query("UPDATE portal_users SET permission_group_id=$1 WHERE id=$2", [group_id, id]);
+  redirect(`/settings?tab=portal&_toast=${encodeURIComponent("Yetki grubu güncellendi")}&_tt=success`);
+}
+
 async function resendPortalInvite(fd: FormData) {
   "use server";
   const session = await getSession();
@@ -426,7 +437,6 @@ export default async function SettingsPage({
                 </div>
               </div>
 
-              {/* Filters / stats strip */}
               {portalUsers.length > 0 && (
                 <div className="pu-stats">
                   <span className="pu-stat total">{portalUsers.length} toplam</span>
@@ -454,9 +464,15 @@ export default async function SettingsPage({
                           <td className="dim-col">{u.email}</td>
                           <td className="dim-col">{u.company_name}</td>
                           <td>
-                            <span className="role-badge" style={{ color: "#8b5cf6", background: "rgba(139,92,246,0.1)" }}>
-                              {u.group_name}
-                            </span>
+                            <form action={changePortalUserGroup} className="group-form">
+                              <input type="hidden" name="id" value={u.id} />
+                              <select name="permission_group_id" defaultValue={u.permission_group_id} className="group-select">
+                                {permissionGroups.map((g) => (
+                                  <option key={g.id} value={g.id}>{g.name}</option>
+                                ))}
+                              </select>
+                              <button type="submit" className="act-btn">Kaydet</button>
+                            </form>
                           </td>
                           <td>
                             {u.source === "ad"
@@ -688,6 +704,11 @@ const css = `
 .status-dot.red{color:#ef4444}
 .source-ad{font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px;background:rgba(99,102,241,0.12);color:#6366f1;border:1px solid rgba(99,102,241,0.25)}
 .source-manual{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--input-bg);color:var(--text-dimmer);border:1px solid var(--border2)}
+
+/* Group change inline form */
+.group-form{display:flex;align-items:center;gap:6px}
+.group-select{font-size:12px;padding:4px 8px;border-radius:6px;background:var(--input-bg);color:var(--text);border:1px solid var(--input-border);cursor:pointer;max-width:160px}
+.group-select:focus{border-color:#3b82f6;outline:none}
 
 /* Actions */
 .act-btn{font-size:11px;font-weight:600;padding:5px 11px;border-radius:6px;background:var(--input-bg);border:1px solid var(--border2);color:var(--text-muted);cursor:pointer;white-space:nowrap}

@@ -1,0 +1,180 @@
+/* ─────────────────────────────────────────────
+   goX tasarım sistemi — editöryel / endüstriyel
+   Tailwind/shadcn YOK. Tamamen özgün token seti.
+   ───────────────────────────────────────────── */
+
+:root {
+	/* yüzeyler */
+	--paper:    #F1EEE3;   /* sıcak kâğıt zemin */
+	--paper-2:  #E7E2D2;   /* gömülü yüzey */
+	--card:     #FBFAF5;   /* yükseltilmiş yüzey */
+	--ink:      #17160F;   /* ana mürekkep */
+	--ink-soft: #54503F;   /* ikincil metin */
+	--ink-mute: #8B8674;   /* soluk / placeholder */
+	--line:     #17160F;   /* hairline çizgi rengi */
+
+	/* aksan */
+	--acid:     #C7F24E;   /* asit yeşili — sinyal */
+	--acid-dim: #B3DE3F;
+	--cobalt:   #2742E8;   /* ikincil vurgular (linkler) */
+	--danger:   #D6442A;
+	--ok:       #1F7A52;
+
+	/* tipografi */
+	--font-display: 'Space Grotesk', system-ui, sans-serif;
+	--font-mono: 'Space Mono', ui-monospace, monospace;
+	--font-text: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+	/* ölçü */
+	--radius: 3px;
+	--gap: 1.25rem;
+	--maxw: 1180px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+	margin: 0;
+	background: var(--paper);
+	color: var(--ink);
+	font-family: var(--font-text);
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+/* ince noktalı zemin dokusu (jenerik düz beyaz yerine) */
+body {
+	background-image: radial-gradient(var(--ink) 0.6px, transparent 0.6px);
+	background-size: 22px 22px;
+	background-position: -11px -11px;
+	background-attachment: fixed;
+}
+/* noktaları çok soluk tut */
+body::before {
+	content: '';
+	position: fixed; inset: 0;
+	background: var(--paper);
+	opacity: 0.93;
+	z-index: -1;
+	pointer-events: none;
+}
+
+a { color: inherit; }
+
+h1, h2, h3, h4 {
+	font-family: var(--font-display);
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	line-height: 1.02;
+	margin: 0;
+}
+
+/* mono mikro-etiket — imza öğesi */
+.eyebrow {
+	font-family: var(--font-mono);
+	font-size: 0.7rem;
+	font-weight: 700;
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: var(--ink-soft);
+}
+
+.lede { font-size: 1.15rem; line-height: 1.5; color: var(--ink-soft); max-width: 46ch; }
+
+/* ── düğmeler ───────────────────────────── */
+.btn {
+	display: inline-flex; align-items: center; gap: 0.55rem;
+	font-family: var(--font-display);
+	font-weight: 600; font-size: 0.95rem;
+	padding: 0.72rem 1.25rem;
+	border: 1.5px solid var(--line);
+	border-radius: var(--radius);
+	background: var(--ink); color: var(--paper);
+	cursor: pointer; text-decoration: none;
+	transition: transform .08s ease, box-shadow .12s ease, background .12s ease;
+	box-shadow: 3px 3px 0 0 var(--ink);
+}
+.btn:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 0 var(--ink); }
+.btn:active { transform: translate(2px,2px); box-shadow: 0 0 0 0 var(--ink); }
+.btn--accent { background: var(--acid); color: var(--ink); }
+.btn--ghost  { background: transparent; color: var(--ink); box-shadow: none; }
+.btn--ghost:hover { background: var(--paper-2); box-shadow: none; transform: none; }
+.btn--sm { padding: 0.45rem 0.8rem; font-size: 0.85rem; box-shadow: 2px 2px 0 0 var(--ink); }
+
+/* ── kart / panel ──────────────────────── */
+.card {
+	background: var(--card);
+	border: 1.5px solid var(--line);
+	border-radius: var(--radius);
+}
+.card--raised { box-shadow: 5px 5px 0 0 var(--ink); }
+
+/* ── form alanları ─────────────────────── */
+.field { display: block; margin-bottom: 1rem; }
+.field > span {
+	display: block; margin-bottom: 0.4rem;
+	font-family: var(--font-mono); font-size: 0.7rem;
+	letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft);
+}
+.input {
+	width: 100%;
+	font-family: var(--font-text); font-size: 1rem;
+	padding: 0.7rem 0.85rem;
+	background: var(--paper);
+	border: 1.5px solid var(--line);
+	border-radius: var(--radius);
+	color: var(--ink);
+	outline: none;
+}
+.input:focus { box-shadow: 0 0 0 3px var(--acid); }
+
+/* ── rozet ─────────────────────────────── */
+.tag {
+	font-family: var(--font-mono); font-size: 0.66rem; font-weight: 700;
+	letter-spacing: 0.1em; text-transform: uppercase;
+	padding: 0.2rem 0.5rem; border: 1.2px solid var(--line); border-radius: 99px;
+}
+.tag--live { background: var(--acid); }
+.tag--off  { background: var(--paper-2); color: var(--ink-soft); }
+
+.container { max-width: var(--maxw); margin: 0 auto; padding: 0 1.5rem; }
+
+/* odak erişilebilirliği */
+:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+
+/* ── mobil optimizasyon (global) ───────────────────────────────
+   Tüm panel/owner sayfalarında ortak davranış. Sayfaların kendi
+   media query'leri bunun üstüne biner. */
+
+/* yatay taşmayı kes — hiçbir ekranda sayfa yana kaymaz */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+@media (max-width: 720px) {
+	:root { --gap: 0.9rem; }
+	.container { padding: 0 1rem; }
+
+	/* başlık ölçeği — büyük display başlıkları telefonda taşmasın */
+	h1 { font-size: clamp(1.5rem, 7vw, 2.1rem); }
+	h2 { font-size: clamp(1.1rem, 5vw, 1.4rem); }
+
+	/* tablolar: yatay kaydırılabilir hale gel (kolonlar ezilmesin) */
+	.tbl, .ltbl {
+		display: block;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		white-space: nowrap;
+	}
+
+	/* dokunma hedefleri biraz büyüsün */
+	.btn { padding: 0.7rem 1.05rem; }
+	.btn--sm { padding: 0.5rem 0.85rem; font-size: 0.85rem; }
+
+	/* iOS Safari'de input'a dokununca otomatik zoom'u engelle (>=16px) */
+	.input, input.input, select.input, textarea.input { font-size: 16px; }
+}
+
+/* çok dar telefon */
+@media (max-width: 420px) {
+	.btn { width: 100%; justify-content: center; }
+	.btn--inline { width: auto; }
+}
