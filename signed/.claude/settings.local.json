@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs ls:*)",
+      "Bash(python3 -c ':*)",
+      "Bash(curl -s http://localhost:5000/health)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -sv http://localhost:5000/health)",
+      "Bash(curl -s -X POST http://localhost:5000/v1/render -H 'Content-Type: application/json' -H 'X-API-Key: dev-gateway-key-change-in-prod' -d '{:*)",
+      "Bash(curl -s -X POST http://localhost:5000/v1/render -H 'Content-Type: application/json' -H 'X-API-Key: dev-gateway-key-change-in-prod' -d '{\"from_email\": \"someone@unknowndomain.com\", \"html\": \"<p>Test</p>\"}')",
+      "Bash(curl -s -X POST http://localhost:5000/v1/render -H 'Content-Type: application/json' -H 'X-API-Key: dev-gateway-key-change-in-prod' -d '{\"from_email\": \"u.tonguc@megasarayhotels.com\", \"html\": \"<p>Hi</p><!-- SIGNATURE-ID -->\"}')",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:5000/v1/render -H 'Content-Type: application/json' -H 'X-API-Key: wrong-key' -d '{\"from_email\": \"x@megasarayhotels.com\", \"html\": \"<p>Test</p>\"}')",
+      "Bash(swaks --server localhost:2525 --from u.tonguc@megasarayhotels.com --to test@example.com --header 'Subject: Toplanti Daveti' --body '<p>Merhaba, toplantiya katilir misiniz?</p>' --add-header 'Content-Type: text/html')",
+      "Bash(sudo docker:*)",
+      "Bash(swaks:*)",
+      "Bash(docker compose:*)",
+      "Read(//var/run/**)",
+      "Bash(getent group:*)",
+      "Bash(grep -E '\\\\.\\(tsx|ts|json|css|mjs\\)$')",
+      "Bash(curl -sv http://localhost:3000)",
+      "Bash(curl -sv http://localhost:5000/v1/admin/auth/login -X POST -H 'Content-Type: application/json' -d '{\"email\":\"admin@signature.local\",\"password\":\"changeme\"}')",
+      "Bash(curl -s -X POST http://localhost:5000/v1/admin/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@signature.local\",\"password\":\"changeme\"}')",
+      "Bash(git -C /home/utonguc/signature-platform log --oneline -20)",
+      "Bash(npm run *)",
+      "Bash(npx tsc *)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(npx --yes typescript tsc --noEmit)",
+      "Bash(./node_modules/.bin/tsc --noEmit)"
+    ]
+  }
+}

@@ -266,10 +266,9 @@ export default function Home() {
               ))}
             </div>
 
-            {/* Panels — CSS attribute selector switches visibility, zero JS inline style */}
-            <div className="product-panels" data-tab={String(activeProduct)}>
+            <div className="product-panels">
               {products.map((p, i) => (
-                <div key={p.name} className={`ppanel ppanel-${i}`}>
+                <div key={p.name} className={`ppanel${activeProduct === i ? " ppanel-active" : ""}`}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
                     <span style={{ padding: "4px 12px", borderRadius: 999, background: `rgba(${p.rgb},0.15)`, border: `1px solid rgba(${p.rgb},0.3)`, fontSize: 10, fontWeight: 800, color: p.color, letterSpacing: "2px", textTransform: "uppercase" }}>{p.badge}</span>
                     <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>{p.tagline}</span>
@@ -520,14 +519,9 @@ export default function Home() {
         .ptab-line { font-size: 11px; color: rgba(255,255,255,0.25); font-weight: 500; }
         .badge-sm { font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 999px; letter-spacing: 0.5px; text-transform: uppercase; flex-shrink: 0; }
 
-        /* CSS attribute selector — zero JS inline style conflict */
         .product-panels { position: relative; }
         .ppanel { display: none; padding: 56px 52px; }
-        [data-tab="0"] .ppanel-0,
-        [data-tab="1"] .ppanel-1,
-        [data-tab="2"] .ppanel-2,
-        [data-tab="3"] .ppanel-3,
-        [data-tab="4"] .ppanel-4 { display: block; animation: paneIn 0.45s cubic-bezier(0.16,1,0.3,1) both; }
+        .ppanel-active { display: block; animation: paneIn 0.45s cubic-bezier(0.16,1,0.3,1) both; }
 
         .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
