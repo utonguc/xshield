@@ -6,6 +6,7 @@ export const navLinks = [
   { label: "Ürünler", href: "/#urunler" },
   { label: "Güvenlik", href: "/#guvenlik-yol-haritasi" },
   { label: "Hakkımızda", href: "/#hakkimizda" },
+  { label: "Blog", href: "/blog" },
   { label: "İletişim", href: "/#iletisim" },
 ];
 

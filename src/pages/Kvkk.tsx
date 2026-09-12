@@ -9,6 +9,7 @@ export default function Kvkk() {
       sections={kvkkNotice.sections}
       otherHref="/gizlilik"
       otherLabel="Gizlilik Politikası"
+      metaDescription="xShield Teknoloji olarak kişisel verilerinizin işlenmesine ilişkin KVKK aydınlatma metni."
     />
   );
 }

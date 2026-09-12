@@ -1,0 +1,52 @@
+# xShield
+
+> xShield, Türkiye merkezli bir teknoloji firmasıdır; kurumsal IT altyapısı,
+> siber güvenlik ve yazılım geliştirme hizmetleri sunar. Ayrıca kendi
+> bünyesinde geliştirdiği altı SaaS ürününü işletir.
+
+## Hizmetler
+
+- **Cloud Sunucu** — Ölçeklenebilir bulut altyapısı, yük dengeleme, otomatik yedekleme, 7/24 izleme.
+- **Ağ Yönetimi** — Kurumsal ağ tasarımı, firewall, VPN, VLAN, SD-WAN.
+- **Sunucu Yönetimi** — Fiziksel/sanal sunucu kurulum, bakım, yama yönetimi, proaktif izleme.
+- **Siber Güvenlik** — Sızma testi (pentest), güvenlik açığı taraması, SOC hizmetleri, KVKK/GDPR uyumluluk danışmanlığı.
+- **Altyapı Hizmetleri** — Data center tasarımı, kablo altyapısı, UPS sistemleri, fiziksel güvenlik.
+- **Yazılım & IT Danışmanlığı** — Dijital dönüşüm yol haritası, özel yazılım geliştirme, ERP/CRM entegrasyonları.
+
+## Ürünler (SaaS)
+
+- **e-Clinic** (https://eclinic.xshield.com.tr) — Klinik/muayenehane yönetim platformu: randevu, hasta takibi, e-fatura, WhatsApp entegrasyonu.
+- **Signed** (https://signed.xshield.com.tr) — Kurumsal e-posta imza yönetim platformu.
+- **xCut** (https://xcut.xshield.com.tr) — Kuaför/güzellik salonu yönetim platformu: randevu, stilist takibi, finans, stok.
+- **xSignage** (https://signage.xshield.com.tr) — Dijital tabela (digital signage) yönetim platformu.
+- **Pekiyi** (https://pekiyi.net) — Okullar için kurumsal yönetim platformu: öğrenci işleri, sınav/transkript, muhasebe, rehberlik.
+- **goX** (https://gox.xshield.com.tr) — Misafir Wi-Fi karşılama ve yönetim platformu (captive portal).
+
+## Süreç
+
+xShield ile çalışma süreci: Ön Görüşme & Keşif → İhtiyaç Analizi → Envanter
+Çıkarma → Teklif & Yol Haritası → Anlaşma & Uygulama → Bakım & Sürekli Destek.
+
+Siber güvenlik hizmeti özelinde: Varlık Envanteri → Güvenlik Açığı Taraması →
+Sızma Testi → Risk Raporu & Önceliklendirme → İyileştirme & Sertleştirme →
+Sürekli İzleme (SOC) → KVKK/GDPR Uyumu.
+
+## Blog
+
+- KVKK Uyumu İçin İşletmelerin Bilmesi Gereken 7 Adım — https://xshield.com.tr/blog/kvkk-uyumu-7-adim
+- Sızma Testi (Pentest) Nedir, Ne Sıklıkla Yapılmalı? — https://xshield.com.tr/blog/sizma-testi-nedir-ne-siklikla
+- Bulut mu, Yerinde Sunucu mu? Doğru Altyapı Kararı — https://xshield.com.tr/blog/bulut-mu-yerinde-sunucu-mu
+- Yedekleme Stratejinizde Sıkça Yapılan 5 Hata — https://xshield.com.tr/blog/yedekleme-stratejisinde-5-hata
+
+Tüm yazılar: https://xshield.com.tr/blog
+
+## İletişim
+
+- E-posta: info@xshield.com.tr
+- Web: https://xshield.com.tr
+- Çalışma saatleri: Hafta içi 09:00–18:00 (acil destek 7/24)
+
+## Diğer Sayfalar
+
+- Gizlilik Politikası: https://xshield.com.tr/gizlilik
+- KVKK Aydınlatma Metni: https://xshield.com.tr/kvkk

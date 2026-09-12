@@ -22,8 +22,11 @@ app.use(
   }),
 );
 
-// Diğer statik dosyalar (favicon vb.) — kısa cache.
-app.use(express.static(dist, { index: false, maxAge: "1h" }));
+// Diğer statik dosyalar + prerender edilmiş sayfalar (ör. /gizlilik/index.html,
+// /blog/<slug>/index.html) — index:true (varsayılan) olmalı, aksi halde bu
+// dizin-index dosyaları hiç servis edilmez ve her istek yanlışlıkla kök
+// index.html'e (SPA fallback'e) düşer.
+app.use(express.static(dist, { maxAge: "1h" }));
 
 // İletişim formu — container'da zaten tanımlı SMTP_* ortam değişkenlerini
 // kullanır (bkz. infra/docker-compose.yml, xshield_web servisi).

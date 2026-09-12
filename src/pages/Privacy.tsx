@@ -9,6 +9,7 @@ export default function Privacy() {
       sections={privacyPolicy.sections}
       otherHref="/kvkk"
       otherLabel="KVKK Aydınlatma Metni"
+      metaDescription="xShield Teknoloji gizlilik politikası: kişisel verilerinizi nasıl topladığımız, kullandığımız ve koruduğumuz."
     />
   );
 }

@@ -7,9 +7,9 @@
     <title>xShield | Bulut, Ağ, Siber Güvenlik & IT Çözümleri</title>
     <meta
       name="description"
-      content="xShield; Cloud sunucu, ağ yönetimi, siber güvenlik, altyapı hizmetleri ve yazılım danışmanlığı alanlarında kurumsal çözümler sunan teknoloji firmasıdır. e-Clinic, Signed, xCut, xSignage ve ShieldSpot ürünleriyle işletmenizi dijitale taşıyın."
+      content="xShield; Cloud sunucu, ağ yönetimi, siber güvenlik, altyapı hizmetleri ve yazılım danışmanlığı alanlarında kurumsal çözümler sunan teknoloji firmasıdır. e-Clinic, Signed, xCut, xSignage, Pekiyi ve goX ürünleriyle işletmenizi dijitale taşıyın."
     />
-    <meta name="keywords" content="xShield, siber güvenlik, cloud sunucu, ağ yönetimi, IT danışmanlığı, altyapı hizmetleri, e-clinic, signed mail imza, xcut salon yönetimi, xsignage dijital tabela, shieldspot hotspot" />
+    <meta name="keywords" content="xShield, siber güvenlik, cloud sunucu, ağ yönetimi, IT danışmanlığı, altyapı hizmetleri, e-clinic, signed mail imza, xcut salon yönetimi, xsignage dijital tabela, pekiyi okul yönetimi, gox misafir wifi" />
     <link rel="canonical" href="https://xshield.com.tr/" />
 
     <!-- Open Graph / WhatsApp, LinkedIn, Facebook paylaşım önizlemesi -->
@@ -29,6 +29,20 @@
     <meta name="twitter:title" content="xShield | Teknoloji & Güvenlik Çözümleri" />
     <meta name="twitter:description" content="Kurumsal IT altyapınızı güçlendirin. Cloud, Ağ, Siber Güvenlik, Yazılım ve IT danışmanlığında uzman ekip." />
     <meta name="twitter:image" content="https://xshield.com.tr/og-image.png" />
+
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-47EN9NT2P3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      // send_page_view: false — react-router sayfa değiştirdiğinde tam sayfa
+      // yenilemesi olmuyor, pageview'ları App.tsx içinde rota değişince
+      // elle gönderiyoruz (bkz. src/App.tsx, useAnalytics).
+      gtag("config", "G-47EN9NT2P3", { send_page_view: false });
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

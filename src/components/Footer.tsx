@@ -62,6 +62,9 @@ export default function Footer() {
         <div className="border-t border-[var(--border)] pt-6 flex flex-wrap justify-between items-center gap-x-6 gap-y-3">
           <p className="text-[var(--subtle)] text-[13px]">© {year} xShield Teknoloji. Tüm hakları saklıdır.</p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <Link to="/blog" className="text-[var(--subtle)] text-[13px] no-underline hover:text-[var(--ink)] transition-colors">
+              Blog
+            </Link>
             <Link to="/gizlilik" className="text-[var(--subtle)] text-[13px] no-underline hover:text-[var(--ink)] transition-colors">
               Gizlilik Politikası
             </Link>

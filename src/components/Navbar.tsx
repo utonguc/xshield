@@ -1,8 +1,26 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { navLinks } from "../data/content";
 
 // navLinks'teki "/#hizmetler" gibi href'lerden gerçek section id'sini çıkarır
 const sectionIds = navLinks.map((l) => l.href.replace("/#", ""));
+
+// "/#..." olanlar aynı sayfada anchor'a kayar (düz <a>); "/blog" gibi gerçek
+// rotalar client-side geçiş yapsın diye react-router <Link> kullanır.
+function NavLink({ href, className, onClick, children }: { href: string; className: string; onClick?: () => void; children: React.ReactNode }) {
+  if (href.startsWith("/#")) {
+    return (
+      <a href={href} className={className} onClick={onClick}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link to={href} className={className} onClick={onClick}>
+      {children}
+    </Link>
+  );
+}
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -19,7 +37,7 @@ export default function Navbar() {
     const sections = sectionIds
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => el !== null);
-    if (sections.length === 0) return; // /gizlilik, /kvkk gibi sayfalarda bölüm yok
+    if (sections.length === 0) return; // /gizlilik, /kvkk, /blog gibi sayfalarda bölüm yok
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -52,7 +70,7 @@ export default function Navbar() {
           {navLinks.map((l) => {
             const isActive = activeId === l.href.replace("/#", "");
             return (
-              <a
+              <NavLink
                 key={l.href}
                 href={l.href}
                 className={`no-underline text-sm font-medium transition-colors ${
@@ -60,7 +78,7 @@ export default function Navbar() {
                 }`}
               >
                 {l.label}
-              </a>
+              </NavLink>
             );
           })}
           <a
@@ -96,14 +114,14 @@ export default function Navbar() {
       {open && (
         <div className="md:hidden bg-[var(--bg)] border-t border-[var(--border)] px-6 pt-4 pb-6 flex flex-col gap-1">
           {navLinks.map((l) => (
-            <a
+            <NavLink
               key={l.href}
               href={l.href}
               onClick={() => setOpen(false)}
               className="text-[var(--muted)] no-underline text-base font-medium py-2.5 border-b border-[var(--border)]"
             >
               {l.label}
-            </a>
+            </NavLink>
           ))}
           <a
             href="/#iletisim"

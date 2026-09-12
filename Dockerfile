@@ -1,6 +1,13 @@
-## Build aşaması: statik siteyi üretir
+## Build aşaması: statik siteyi üretir + prerender (postbuild) çalıştırır
 FROM node:20-alpine AS build
 WORKDIR /app
+
+## Prerender adımı gerçek bir tarayıcıda (puppeteer) her rotayı render eder.
+## Puppeteer'ın kendi indirdiği glibc tabanlı Chromium Alpine'in musl libc'inde
+## çalışmaz — bu yüzden Alpine'in kendi chromium paketi kurulup ona yönlendirilir.
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 COPY package.json package-lock.json* ./
 RUN npm config set fetch-retries 5 \

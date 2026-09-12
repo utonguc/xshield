@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import type { LegalSection } from "../data/legal";
 
 export default function LegalPage({
@@ -9,13 +10,17 @@ export default function LegalPage({
   sections,
   otherHref,
   otherLabel,
+  metaDescription,
 }: {
   title: string;
   updated: string;
   sections: LegalSection[];
   otherHref: string;
   otherLabel: string;
+  metaDescription: string;
 }) {
+  useDocumentMeta(`${title} | xShield`, metaDescription);
+
   return (
     <>
       <Navbar />
