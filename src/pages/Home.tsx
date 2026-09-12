@@ -1,5 +1,6 @@
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
+import StatsStrip from "../components/StatsStrip";
 import Pillars from "../components/Pillars";
 import ProcessRoadmap from "../components/ProcessRoadmap";
 import ProductsShowcase from "../components/ProductsShowcase";
@@ -15,6 +16,7 @@ export default function Home() {
     <>
       <Navbar />
       <Hero />
+      <StatsStrip />
       <Pillars />
       <ProcessRoadmap />
       <ProductsShowcase />

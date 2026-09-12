@@ -27,6 +27,12 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Sabit navbar (68px) bir bölüme atlarken içeriğin üstünü kapatmasın diye
+   id'si olan her section için üstten pay bırakılır. */
+[id] {
+  scroll-margin-top: 84px;
+}
+
 body {
   margin: 0;
   background: var(--bg);

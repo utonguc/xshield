@@ -9,11 +9,13 @@ export const navLinks = [
   { label: "İletişim", href: "/#iletisim" },
 ];
 
+// `countTo` verilenler ekrana girince 0'dan sayarak animasyonla belirir
+// (bkz. components/AnimatedStat.tsx); verilmeyenler ("7/24" gibi) sabit metin.
 export const stats = [
-  { value: "99.9%", label: "Uptime SLA" },
+  { value: "99.9%", countTo: 99.9, decimals: 1, suffix: "%", label: "Uptime SLA" },
   { value: "7/24", label: "Teknik Destek" },
   { value: "< 2sa", label: "Ortalama Yanıt Süresi" },
-  { value: "50+", label: "Mutlu Müşteri" },
+  { value: "50+", countTo: 50, suffix: "+", label: "Mutlu Müşteri" },
 ];
 
 export const services = [
