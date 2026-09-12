@@ -1,7 +1,0 @@
-smtp      inet  n       -       n       -       -       smtpd
-
-# Content filter service — pipe mail through processor.py
-# flags=Rq: R=return-path from argv[1], q=queue before piping
-# Postfix passes ${sender} as argv[1] and ${recipient} as argv[2]
-signature-filter unix  -       n       n       -       10      pipe
-  flags=Rq user=root argv=/usr/bin/python3 /processor.py ${sender} ${recipient}

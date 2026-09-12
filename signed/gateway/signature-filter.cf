@@ -1,4 +1,0 @@
-
-# Signature injection pipe — appended to Postfix default master.cf at startup
-signature-filter unix  -       n       n       -       10      pipe
-  flags=Rq user=root argv=/usr/bin/python3 /processor.py ${sender} ${recipient}

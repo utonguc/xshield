@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #1f6f5c; /* koyu çam yeşili/teal — tek, ölçülü aksan */
+  --color-accentdeep: #123a30; /* beyaz üzerinde metin için daha koyu hali */
+  --color-ink: #101014; /* neredeyse siyah, ana metin/buton */
+  --color-emerald: #0e8f6b; /* e-Clinic */
+  --color-amber: #e2790c; /* Signed */
+  --color-graphite: #1b1d22; /* ShieldSpot / nötr koyu */
+}
+
+:root {
+  --bg: #f7f6f1; /* sıcak kağıt beyazı */
+  --surface: #ece9df; /* bir ton daha koyu, bölüm ayrımı için */
+  --card: #ffffff;
+  --border: rgba(16, 16, 20, 0.13);
+  --ink: #101014;
+  --muted: #5f5f67;
+  --subtle: #9c9ca3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Inter", system-ui, sans-serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--ink);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(16, 16, 20, 0.25);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink);
+}
+
+.mono {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Başlıklarda tek bir kelimeyi vurgulamak için: düz renkli, kalın metin.
+   Gradyan yazı yok, fosforlu-kalem bloğu yok — sadece tutarlı bir vurgu rengi. */
+.marker {
+  color: var(--color-accentdeep);
+}
+
+.section {
+  padding: 96px 0;
+  position: relative;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Düz, kağıt gibi kart — camsı/bulanık/parlayan sınır yok. */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(16, 16, 20, 0.04);
+  transition: all 0.25s ease;
+}
+
+.panel:hover {
+  border-color: rgba(16, 16, 20, 0.28);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 40px rgba(16, 16, 20, 0.08);
+}
+
+/* Bölüm etiketi / "kicker" — ince, teknik, mono */
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accentdeep);
+}
+.kicker::before {
+  content: "";
+  width: 18px;
+  height: 1px;
+  background: var(--color-accentdeep);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-slide-up {
+  animation: slideUp 0.6s ease forwards;
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 64px 0;
+  }
+}

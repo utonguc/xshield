@@ -1,4 +1,0 @@
-# Route all inbound mail through signature processor
-content_filter = signature-filter:dummy
-# Prevent address-mapping loops after sendmail -G re-injection
-receive_override_options = no_address_mappings

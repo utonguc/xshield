@@ -1,6 +1,4 @@
 node_modules
-.next
-clinic
+dist
 .git
-.gitignore
-README.md
+*.log
