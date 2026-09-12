@@ -2,6 +2,7 @@ import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import StatsStrip from "../components/StatsStrip";
 import Pillars from "../components/Pillars";
+import DowntimeCalculator from "../components/DowntimeCalculator";
 import ProcessRoadmap from "../components/ProcessRoadmap";
 import ProductsShowcase from "../components/ProductsShowcase";
 import SecurityRoadmap from "../components/SecurityRoadmap";
@@ -18,6 +19,7 @@ export default function Home() {
       <Hero />
       <StatsStrip />
       <Pillars />
+      <DowntimeCalculator />
       <ProcessRoadmap />
       <ProductsShowcase />
       <SecurityRoadmap />

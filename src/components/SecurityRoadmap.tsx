@@ -2,6 +2,7 @@ import { lazy } from "react";
 import { securitySteps } from "../data/content";
 import Roadmap from "./Roadmap";
 import Scene from "./Scene";
+import SecurityChecklist from "./SecurityChecklist";
 
 const DefenseLines = lazy(() =>
   import("@designcodeio/threeui/components/DefenseLines").then((m) => ({ default: m.DefenseLines })),
@@ -38,6 +39,8 @@ export default function SecurityRoadmap() {
         </div>
 
         <Roadmap steps={securitySteps} dotClassName="bg-graphite" />
+
+        <SecurityChecklist />
       </div>
     </section>
   );
