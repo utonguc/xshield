@@ -128,7 +128,8 @@ export default function Contact() {
                     <option>Signed</option>
                     <option>xCut</option>
                     <option>xSignage</option>
-                    <option>ShieldSpot</option>
+                    <option>Pekiyi</option>
+                    <option>goX</option>
                     <option>Diğer</option>
                   </select>
                 </div>

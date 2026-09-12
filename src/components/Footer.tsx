@@ -35,7 +35,7 @@ export default function Footer() {
 
           <div>
             <h4 className="text-[var(--ink)] font-semibold text-sm mb-4 tracking-wide uppercase">Ürünler</h4>
-            {["e-Clinic", "Signed", "xCut", "xSignage", "ShieldSpot"].map((p) => (
+            {["e-Clinic", "Signed", "xCut", "xSignage", "Pekiyi", "goX"].map((p) => (
               <a
                 key={p}
                 href="/#urunler"
