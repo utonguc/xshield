@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Ayrı uygulama (xShield Pet), kendi eslint ayarı var.
+    "pet/**",
   ]),
 ]);
 
