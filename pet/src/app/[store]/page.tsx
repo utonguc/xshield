@@ -1,13 +1,39 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PET_TYPES, type PetType } from "@/db/schema";
 import { formatTL } from "@/lib/format";
 import { PET_TYPE_LABELS } from "@/lib/labels";
 import { getCatalog, getStoreCategories, getZones } from "@/lib/storefront";
+import { JsonLd } from "@/components/json-ld";
+import { getStoreCanonicalBase } from "@/lib/seo";
 import { getStoreBase, getStoreBySlug } from "@/lib/tenant";
+import { imageUrl } from "@/lib/uploads";
 import { ProductCard } from "./product-card";
 
 const PET_EMOJI: Partial<Record<PetType, string>> = { kedi: "🐱", kopek: "🐶", kus: "🐦", balik: "🐠", kemirgen: "🐹", surungen: "🦎" };
+
+export async function generateMetadata({ params, searchParams }: PageProps<"/[store]">): Promise<Metadata> {
+  const store = await getStoreBySlug((await params).store);
+  if (!store) return {};
+  const sp = await searchParams;
+  const canonical = await getStoreCanonicalBase(store.id, store.slug);
+  const cats = await getStoreCategories(store.id);
+  const cat = typeof sp.kategori === "string" ? cats.find((c) => c.slug === sp.kategori) : undefined;
+  // Arama sonuçları ve tür filtresi ince/yinelenen içerik: indekslenmesin, bağlantıları izlensin.
+  const thin = (typeof sp.q === "string" && sp.q.trim() !== "") || typeof sp.tur === "string";
+  const place = [store.district, store.city].filter(Boolean).join(", ");
+  return {
+    ...(cat
+      ? {
+          title: `${cat.name}${place ? ` — ${place}` : ""}`,
+          description: `${store.name} ${cat.name.toLocaleLowerCase("tr")} ürünleri${place ? `, ${place}` : ""}. Online sipariş, adrese teslim veya gel-al.`,
+        }
+      : {}),
+    alternates: { canonical: cat ? `${canonical}?kategori=${encodeURIComponent(cat.slug)}` : canonical },
+    robots: thin ? { index: false, follow: true } : undefined,
+  };
+}
 
 export default async function StoreHome({ params, searchParams }: PageProps<"/[store]">) {
   const store = await getStoreBySlug((await params).store);
@@ -31,12 +57,14 @@ export default async function StoreHome({ params, searchParams }: PageProps<"/[s
     return s ? `${home}?${s}` : home;
   };
   const filtered = !!(q || pet || cat);
+  const Heading = filtered ? "h1" : "h2";
   const minFee = zones.length ? Math.min(...zones.map((z) => z.fee)) : null;
   const maxFee = zones.length ? Math.max(...zones.map((z) => z.fee)) : null;
   const freeOver = zones.map((z) => z.freeOver).filter((x): x is number => x != null);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
+      {!filtered && <StoreJsonLd store={store} />}
       {!filtered && (
         <section className="relative overflow-hidden rounded-3xl bg-brand-600 px-6 py-8 text-white sm:px-10 sm:py-12">
           <div className="relative z-10 max-w-xl">
@@ -97,7 +125,7 @@ export default async function StoreHome({ params, searchParams }: PageProps<"/[s
       )}
 
       <div className="mt-6 flex items-baseline justify-between">
-        <h2 className="text-lg font-bold">{q ? `“${q}” için sonuçlar` : (cat?.name ?? (pet ? `${PET_TYPE_LABELS[pet]} ürünleri` : "Tüm ürünler"))}</h2>
+        <Heading className="text-lg font-bold">{q ? `“${q}” için sonuçlar` : (cat?.name ?? (pet ? `${PET_TYPE_LABELS[pet]} ürünleri` : "Tüm ürünler"))}</Heading>
         {filtered && (
           <Link href={home} className="text-sm text-brand-700 hover:underline">
             Filtreleri temizle
@@ -118,4 +146,34 @@ export default async function StoreHome({ params, searchParams }: PageProps<"/[s
       )}
     </main>
   );
+}
+
+/** Google için mağaza bilgisi (schema.org/PetStore): ad, adres, telefon, saatler. */
+async function StoreJsonLd({ store }: { store: NonNullable<Awaited<ReturnType<typeof getStoreBySlug>>> }) {
+  const url = await getStoreCanonicalBase(store.id, store.slug);
+  const data: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "PetStore",
+    name: store.name,
+    url,
+    description: store.tagline ?? store.about ?? undefined,
+    image: store.logoPath ? new URL(imageUrl(store.logoPath)!, url).toString() : undefined,
+    telephone: store.phone ? `+90${store.phone}` : undefined,
+    email: store.email ?? undefined,
+    address:
+      store.address || store.city
+        ? {
+            "@type": "PostalAddress",
+            streetAddress: store.address ?? undefined,
+            addressLocality: store.district ?? undefined,
+            addressRegion: store.city ?? undefined,
+            addressCountry: "TR",
+          }
+        : undefined,
+    // Serbest metin ("Her gün 09:00-21:00"); Google bunu açıklama olarak okur
+    openingHours: store.workingHours ?? undefined,
+    paymentAccepted: [store.payCashOnDelivery && "Nakit", store.payCardOnDelivery && "Kredi Kartı", store.payBankTransfer && "Havale"].filter(Boolean).join(", ") || undefined,
+    currenciesAccepted: "TRY",
+  };
+  return <JsonLd data={data} />;
 }

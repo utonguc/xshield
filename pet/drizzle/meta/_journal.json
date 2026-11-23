@@ -15,6 +15,13 @@
       "when": 1795442006078,
       "tag": "0001_custom_domains",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795457850355,
+      "tag": "0002_seo_analytics",
+      "breakpoints": true
     }
   ]
 }

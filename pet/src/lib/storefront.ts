@@ -93,7 +93,15 @@ export async function getStoreProduct(tenantId: string, productId: string) {
     .where(and(eq(products.id, productId), eq(products.tenantId, tenantId), eq(products.isPublished, true)));
   if (!p) return null;
   const vs = await db
-    .select({ id: variants.id, name: variants.name, unit: variants.unit, price: variants.price, compareAtPrice: variants.compareAtPrice, stockQty: variants.stockQty })
+    .select({
+      id: variants.id,
+      name: variants.name,
+      unit: variants.unit,
+      price: variants.price,
+      compareAtPrice: variants.compareAtPrice,
+      stockQty: variants.stockQty,
+      barcode: variants.barcode,
+    })
     .from(variants)
     .where(and(eq(variants.productId, productId), activeVariant))
     .orderBy(asc(variants.sort));

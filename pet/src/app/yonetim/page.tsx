@@ -7,6 +7,10 @@ import { db } from "@/db";
 import { orders, products, tenantDomains, tenants } from "@/db/schema";
 import { Logo } from "@/components/logo";
 import { Stat } from "@/components/page-header";
+import { TagsForm } from "@/components/tags-form";
+import { getPlatformAnalytics } from "@/lib/analytics";
+import { appUrl } from "@/lib/seo";
+import { savePlatformTagsAction } from "./actions";
 import { getSession, isPlatformAdmin } from "@/lib/auth";
 import { displayPhone, formatDate, formatTL } from "@/lib/format";
 
@@ -31,6 +35,7 @@ async function toggleStatus(tenantId: string) {
 
 export default async function AdminPage() {
   await requireAdmin();
+  const tags = await getPlatformAnalytics();
   const rows = await db
     .select({
       id: tenants.id,
@@ -105,6 +110,14 @@ export default async function AdminPage() {
           </tbody>
         </table>
       </div>
+      <section id="seo" className="card mt-8 p-5">
+        <h2 className="font-semibold">SEO ve Analitik — {appUrl().replace(/^https?:\/\//, "")}</h2>
+        <p className="mb-5 text-sm text-stone-600">
+          Tanıtım sayfası ve giriş/kayıt sayfaları ile platform adresindeki mağaza vitrinlerinde kullanılır. Kendi alan adını bağlayan mağazalar kendi
+          kodlarını mağaza panelinden (Ayarlar → SEO ve Analitik) girer. Site haritası: <code>{appUrl()}/sitemap.xml</code>
+        </p>
+        <TagsForm action={savePlatformTagsAction} ga={tags.gaId} gsc={tags.gscToken} siteUrl={`${appUrl()}/`} />
+      </section>
     </div>
   );
 }

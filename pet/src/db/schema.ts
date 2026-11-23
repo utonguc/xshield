@@ -62,6 +62,9 @@ export const tenants = pgTable("tenants", {
   orderSeq: integer("order_seq").notNull().default(1000),
   // Kendi alan adını bağlarken DNS TXT kaydına yazılacak doğrulama kodu
   domainToken: text("domain_token"),
+  // Mağazanın kendi Google Analytics (GA4) ve Search Console doğrulama kodları
+  gaMeasurementId: text("ga_measurement_id"),
+  gscVerification: text("gsc_verification"),
   createdAt: ts("created_at").notNull().defaultNow(),
 });
 
@@ -386,3 +389,11 @@ export const tenantDomains = pgTable(
   },
   (t) => [index("tenant_domains_tenant_idx").on(t.tenantId)],
 );
+
+// ── Platform ayarları (anahtar/değer) ───────────────────────────────────────
+// Ör. platformun kendi GA4 kimliği ve Search Console doğrulama kodu (/yonetim'den girilir).
+export const platformSettings = pgTable("platform_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});

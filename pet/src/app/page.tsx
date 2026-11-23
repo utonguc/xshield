@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Analytics } from "@/components/analytics";
+import { JsonLd } from "@/components/json-ld";
 import { PawIcon } from "@/components/logo";
+import { getPlatformAnalytics } from "@/lib/analytics";
 import { whatsappLink } from "@/lib/format";
+import { appUrl } from "@/lib/seo";
 
 /*
  * Pazarlama sayfası (pet.xshield.com.tr). Bilinçli olarak "şablon" görünümden uzak:
@@ -14,11 +18,24 @@ const display = Fraunces({ subsets: ["latin", "latin-ext"], axes: ["opsz", "SOFT
 const sans = IBM_Plex_Sans({ subsets: ["latin", "latin-ext"], weight: ["400", "500", "600"], variable: "--f-sans" });
 const mono = IBM_Plex_Mono({ subsets: ["latin", "latin-ext"], weight: ["400", "500"], variable: "--f-mono" });
 
-export const metadata: Metadata = {
-  title: "xShield Pet — Petshoplar için online mağaza, kasa ve stok",
-  description:
-    "Mahalle petshopu için tek sistem: rafınızdaki ürünler internette satılır, kasada satılan stoktan düşer, mama SKT’leri takip edilir, siparişi kendi kuryeniz götürür.",
-};
+const TITLE = "xShield Pet — Petshop programı: online mağaza, barkodlu kasa, stok takibi";
+const DESCRIPTION =
+  "Mahalle petshopu için tek sistem: rafınızdaki ürünler internette satılır, kasada satılan stoktan düşer, mama son kullanma tarihleri takip edilir, siparişi kendi kuryeniz götürür. 30 gün ücretsiz deneyin.";
+
+export async function generateMetadata(): Promise<Metadata> {
+  await connection();
+  const { gscToken } = await getPlatformAnalytics();
+  const url = `${appUrl()}/`;
+  return {
+    title: { absolute: TITLE },
+    description: DESCRIPTION,
+    keywords: ["petshop programı", "petshop yazılımı", "petshop online mağaza", "petshop stok takibi", "petshop kasa programı", "pet shop e-ticaret"],
+    alternates: { canonical: url },
+    openGraph: { type: "website", locale: "tr_TR", url, siteName: "xShield Pet", title: TITLE, description: DESCRIPTION },
+    twitter: { card: "summary", title: TITLE, description: DESCRIPTION },
+    verification: gscToken ? { google: gscToken } : undefined,
+  };
+}
 
 const DAY = [
   {
@@ -71,10 +88,28 @@ export default async function Landing() {
   await connection(); // satış iletişim bilgisi çalışma anında okunur
   const salesWhatsapp = process.env.SALES_WHATSAPP?.trim() || null;
   const salesEmail = process.env.SALES_EMAIL?.trim() || "info@xshield.com.tr";
+  const { gaId } = await getPlatformAnalytics();
+  const softwareLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "xShield Pet",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    url: `${appUrl()}/`,
+    description: DESCRIPTION,
+    inLanguage: "tr",
+    publisher: { "@type": "Organization", name: "xShield", url: "https://xshield.com.tr", email: salesEmail },
+    offers: [
+      { "@type": "Offer", name: "Esnaf (yıllık)", price: "7200", priceCurrency: "TRY" },
+      { "@type": "Offer", name: "Profesyonel (yıllık)", price: "14400", priceCurrency: "TRY" },
+    ],
+  };
 
   return (
     <div className={`${display.variable} ${sans.variable} ${mono.variable} lp`}>
       <style>{CSS}</style>
+      <JsonLd data={softwareLd} />
+      <Analytics gaIds={gaId ? [gaId] : []} />
 
       {/* ── Üst şerit ─────────────────────────────────────────────── */}
       <header className="lp-wrap flex items-center justify-between py-5">

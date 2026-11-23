@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Analytics } from "@/components/analytics";
 import { PawIcon } from "@/components/logo";
+import { getPlatformAnalytics } from "@/lib/analytics";
 import { displayPhone, whatsappLink } from "@/lib/format";
 import { LEGAL_LABELS } from "@/lib/labels";
 import { getLegalKinds } from "@/lib/storefront";
+import { getStoreCanonicalBase } from "@/lib/seo";
 import { getStoreBase, getStoreBySlug } from "@/lib/tenant";
 import { imageUrl } from "@/lib/uploads";
 import { CartButton, CartProvider } from "./cart";
@@ -13,10 +16,21 @@ export async function generateMetadata({ params }: LayoutProps<"/[store]">): Pro
   const store = await getStoreBySlug((await params).store);
   if (!store) return {};
   const place = [store.district, store.city].filter(Boolean).join(", ");
+  const canonical = await getStoreCanonicalBase(store.id, store.slug);
   return {
     title: { default: `${store.name}${place ? ` — ${place}` : ""} | Online Petshop`, template: `%s | ${store.name}` },
-    description: store.tagline ?? `${store.name} online petshop: mama, kum, oyuncak, aksesuar. ${place}`,
-    openGraph: { siteName: store.name, images: store.logoPath ? [imageUrl(store.logoPath)!] : undefined },
+    description: store.tagline ?? `${store.name}${place ? `, ${place}` : ""} online petshop: kedi ve köpek maması, kum, oyuncak, tasma, aksesuar. Adrese teslim veya gel-al.`,
+    // Görseller ve göreli adresler mağazanın asıl adresine göre çözülsün
+    metadataBase: new URL(canonical.endsWith("/") ? canonical : canonical + "/"),
+    openGraph: {
+      siteName: store.name,
+      type: "website",
+      locale: "tr_TR",
+      images: store.logoPath ? [new URL(imageUrl(store.logoPath)!, canonical).toString()] : undefined,
+    },
+    // Mağazanın kendi Search Console doğrulaması (kendi alan adı veya platform adresindeki URL öneki mülkü)
+    verification: store.gscVerification ? { google: store.gscVerification } : undefined,
+    robots: store.status === "active" ? undefined : { index: false, follow: false },
   };
 }
 
@@ -33,11 +47,14 @@ export default async function StoreLayout({ children, params }: LayoutProps<"/[s
       </main>
     );
 
-  const legal = await getLegalKinds(store.id);
-  const base = await getStoreBase(store.slug);
+  const [legal, base, platform] = await Promise.all([getLegalKinds(store.id), getStoreBase(store.slug), getPlatformAnalytics()]);
+  // Mağazanın kendi GA'sı her zaman; platformun GA'sı yalnızca platform adresinde (kendi alan adında değil).
+  const gaIds = [store.gaMeasurementId, base ? platform.gaId : null].filter((x): x is string => !!x);
+  const privacyKind = legal.includes("gizlilik") ? "gizlilik" : legal.includes("kvkk") ? "kvkk" : null;
 
   return (
     <CartProvider slug={store.slug} base={base}>
+      <Analytics gaIds={gaIds} privacyHref={privacyKind ? `${base}/sayfa/${privacyKind}` : null} />
       <div className="flex min-h-dvh flex-col bg-paper">
         <header className="sticky top-0 z-30 border-b border-stone-200/70 bg-paper/90 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">

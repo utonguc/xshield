@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/json-ld";
 import { PawIcon } from "@/components/logo";
 import { PET_TYPE_LABELS } from "@/lib/labels";
+import { getStoreCanonicalBase } from "@/lib/seo";
 import { getCatalog, getStoreProduct } from "@/lib/storefront";
 import { getStoreBase, getStoreBySlug } from "@/lib/tenant";
 import { imageUrl } from "@/lib/uploads";
@@ -14,10 +16,18 @@ export async function generateMetadata({ params }: PageProps<"/[store]/urun/[id]
   const store = await getStoreBySlug(slug);
   const p = store ? await getStoreProduct(store.id, id) : null;
   if (!p) return {};
+  const base = await getStoreCanonicalBase(store!.id, store!.slug);
+  const url = `${base}/urun/${p.id}`;
+  const title = [p.brand, p.name].filter(Boolean).join(" ");
+  const minPrice = Math.min(...p.variants.map((v) => v.price));
+  const description =
+    p.description?.replace(/\s+/g, " ").slice(0, 155) ??
+    `${title} — ${store!.name}. ${minPrice.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}'den başlayan fiyatlarla, adrese teslim veya gel-al.`;
   return {
-    title: [p.brand, p.name].filter(Boolean).join(" "),
-    description: p.description?.slice(0, 160) ?? `${p.name} — ${store!.name}`,
-    openGraph: { images: p.imagePath ? [imageUrl(p.imagePath)!] : undefined },
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url, images: p.imagePath ? [new URL(imageUrl(p.imagePath)!, base).toString()] : undefined },
   };
 }
 
@@ -29,10 +39,45 @@ export default async function ProductPage({ params }: PageProps<"/[store]/urun/[
   if (!p) notFound();
   const base = await getStoreBase(store.slug);
   const related = (await getCatalog(store.id, { categoryId: p.categoryId, limit: 9 })).filter((x) => x.id !== p.id).slice(0, 4);
+  const canonicalBase = await getStoreCanonicalBase(store.id, store.slug);
+  const productUrl = `${canonicalBase}/urun/${p.id}`;
+  // schema.org/Product: Google ürün sonuçlarında fiyat ve stok durumu gösterebilir.
+  const offer = (v: (typeof p.variants)[number]) => ({
+    "@type": "Offer",
+    price: v.price.toFixed(2),
+    priceCurrency: "TRY",
+    availability: v.stockQty > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    url: productUrl,
+    seller: { "@type": "Organization", name: store.name },
+  });
+  const gtin = p.variants.find((v) => v.barcode && /^\d{8}$|^\d{12,14}$/.test(v.barcode))?.barcode;
+  const productLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: [p.brand, p.name].filter(Boolean).join(" "),
+    description: p.description ?? undefined,
+    image: p.imagePath ? new URL(imageUrl(p.imagePath)!, canonicalBase).toString() : undefined,
+    brand: p.brand ? { "@type": "Brand", name: p.brand } : undefined,
+    category: p.category ?? undefined,
+    sku: p.variants.length === 1 ? p.variants[0].id : undefined,
+    gtin: p.variants.length === 1 ? gtin : undefined,
+    offers:
+      p.variants.length === 1
+        ? offer(p.variants[0])
+        : {
+            "@type": "AggregateOffer",
+            priceCurrency: "TRY",
+            lowPrice: Math.min(...p.variants.map((v) => v.price)).toFixed(2),
+            highPrice: Math.max(...p.variants.map((v) => v.price)).toFixed(2),
+            offerCount: p.variants.length,
+            availability: p.variants.some((v) => v.stockQty > 0) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          },
+  };
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
-      <nav className="mb-4 text-sm text-stone-500">
+      <JsonLd data={productLd} />
+      <nav className="mb-4 text-sm text-stone-500" aria-label="Sayfa yolu">
         <Link href={base || "/"} className="hover:underline">
           Ana sayfa
         </Link>

@@ -56,5 +56,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Statik dosyalar ve ürün görselleri her iki adreste de aynen servis edilir.
-  matcher: ["/((?!_next/static|_next/image|dosya/|icon.svg|favicon.ico|robots.txt).*)"],
+  // robots.txt ve sitemap.xml hariç tutulmaz: kendi alan adında mağazanınkine yönlendirilir.
+  matcher: ["/((?!_next/static|_next/image|dosya/|icon.svg|favicon.ico).*)"],
 };
