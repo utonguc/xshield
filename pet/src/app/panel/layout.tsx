@@ -5,11 +5,13 @@ import { orders } from "@/db/schema";
 import { logoutAction } from "@/app/(auth)/actions";
 import { Logo } from "@/components/logo";
 import { requireMember } from "@/lib/auth";
+import { getStoreUrl } from "@/lib/tenant";
 import { PanelNav } from "./panel-nav";
 import { NewOrderWatcher } from "./new-order-watcher";
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   const me = await requireMember();
+  const storeUrl = await getStoreUrl(me.tenant.id, me.tenant.slug);
   const [{ n: newOrders }] = await db
     .select({ n: count() })
     .from(orders)
@@ -22,7 +24,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
           <Logo href="/panel" />
           <div className="min-w-0 text-right lg:mt-4 lg:text-left">
             <p className="truncate text-sm font-semibold">{me.tenant.name}</p>
-            <Link href={`/${me.tenant.slug}`} target="_blank" className="text-xs font-medium text-brand-700 hover:underline">
+            <Link href={storeUrl.href} target="_blank" className="text-xs font-medium text-brand-700 hover:underline">
               Mağazayı görüntüle ↗
             </Link>
           </div>

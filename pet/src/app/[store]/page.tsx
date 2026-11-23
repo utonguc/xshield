@@ -4,7 +4,7 @@ import { PET_TYPES, type PetType } from "@/db/schema";
 import { formatTL } from "@/lib/format";
 import { PET_TYPE_LABELS } from "@/lib/labels";
 import { getCatalog, getStoreCategories, getZones } from "@/lib/storefront";
-import { getStoreBySlug } from "@/lib/tenant";
+import { getStoreBase, getStoreBySlug } from "@/lib/tenant";
 import { ProductCard } from "./product-card";
 
 const PET_EMOJI: Partial<Record<PetType, string>> = { kedi: "🐱", kopek: "🐶", kus: "🐦", balik: "🐠", kemirgen: "🐹", surungen: "🦎" };
@@ -20,14 +20,15 @@ export default async function StoreHome({ params, searchParams }: PageProps<"/[s
   const [cats, zones] = await Promise.all([getStoreCategories(store.id), getZones(store.id)]);
   const cat = cats.find((c) => c.slug === catSlug) ?? null;
   const items = await getCatalog(store.id, { q, petType: pet, categoryId: cat?.id ?? null });
-  const base = `/${store.slug}`;
+  const base = await getStoreBase(store.slug);
+  const home = base || "/";
 
   const link = (patch: Record<string, string | null>) => {
     const p = new URLSearchParams();
     const merged = { q: q || null, tur: pet, kategori: cat?.slug ?? null, ...patch };
     for (const [k, v] of Object.entries(merged)) if (v) p.set(k, v);
     const s = p.toString();
-    return s ? `${base}?${s}` : base;
+    return s ? `${home}?${s}` : home;
   };
   const filtered = !!(q || pet || cat);
   const minFee = zones.length ? Math.min(...zones.map((z) => z.fee)) : null;
@@ -62,7 +63,7 @@ export default async function StoreHome({ params, searchParams }: PageProps<"/[s
         </section>
       )}
 
-      <form action={base} className="mt-5 md:hidden">
+      <form action={home} className="mt-5 md:hidden">
         <input name="q" defaultValue={q} placeholder="Mama, kum, tasma ara…" className="input bg-white" aria-label="Ürün ara" />
       </form>
 
@@ -98,7 +99,7 @@ export default async function StoreHome({ params, searchParams }: PageProps<"/[s
       <div className="mt-6 flex items-baseline justify-between">
         <h2 className="text-lg font-bold">{q ? `“${q}” için sonuçlar` : (cat?.name ?? (pet ? `${PET_TYPE_LABELS[pet]} ürünleri` : "Tüm ürünler"))}</h2>
         {filtered && (
-          <Link href={base} className="text-sm text-brand-700 hover:underline">
+          <Link href={home} className="text-sm text-brand-700 hover:underline">
             Filtreleri temizle
           </Link>
         )}

@@ -14,6 +14,7 @@ Petshoplar için çok kiracılı (multi-tenant) online mağaza + stok takibi. He
 | **Ürünler** | Barkodla hızlı ekleme; **ortak barkod kataloğu** sayesinde başka bir mağazanın eklediği ürünün adı/markası otomatik dolar (fiyat ve stok paylaşılmaz). Telefondan çekilen görsel tarayıcıda küçültülür |
 | **Teslimat / Ekip** | Mahalle bazlı bölgeler (ücret, minimum tutar, şu tutar üstü ücretsiz), personel ve kurye hesapları |
 | **Kurye** (`/kurye`) | Kuryenin telefonunda kendisine atanan teslimatlar, yol tarifi, arama, tahsil edilecek tutar, "yola çıktım / teslim ettim" |
+| **Kendi alan adı** (`/panel/ayarlar/alan-adi`) | Mağaza `www.kendialanadi.com` adresini bağlar; DNS'e bir TXT (sahiplik) ve bir CNAME kaydı ekler, “Kontrol et” ile doğrular. Vitrin o adresten, bağlantılar öneksiz (`/urun/...`) çalışır; panel ve giriş platform adresine yönlenir. Platform adresi de çalışmaya devam eder |
 | **Platform yönetimi** (`/yonetim`) | `ADMIN_EMAILS` içindeki kullanıcılar tüm mağazaları, son 30 gün işlem/ciroyu görür, mağazayı askıya alır |
 
 Mağaza sahibinin kendisinin yaptığı (platformun yapmadığı) işler: e-fatura/e-arşiv, sanal POS
@@ -35,6 +36,23 @@ Mağaza sahibinin kendisinin yaptığı (platformun yapmadığı) işler: e-fatu
 - **Oturum**: scrypt ile şifre, veritabanında SHA-256 özeti tutulan rastgele token, httpOnly çerez.
 - **Görseller**: `UPLOAD_DIR` (Docker volume), içerik imzası doğrulanır, `/dosya/...` üzerinden
   kalıcı cache ile servis edilir.
+
+## Kendi alan adı nasıl çalışır
+
+1. Mağaza sahibi panelden alan adını ekler → DNS'e `TXT _xshield-pet.<alan-adi>` ve `CNAME <alan-adi> → pet.xshield.com.tr`
+   (`CUSTOM_DOMAIN_TARGET`) kayıtlarını girer → “Kontrol et”. TXT kaydı eşleşirse alan adı `verified` olur.
+2. `src/proxy.ts` gelen isteğin `Host`'una bakar; platform adresi değilse alan adını mağazaya eşler ve
+   `/urun/1` isteğini içeride `/<slug>/urun/1` olarak işler (60 sn önbellek). Eski `/<slug>/...` bağlantıları
+   temiz adrese, `/panel` ve `/giris` platform adresine yönlendirilir.
+3. **nginx**: bilinmeyen alan adları varsayılan olarak eClinic'e düştüğü için doğrulanan alan adları
+   `xshield-infra/sync-pet-domains.sh` ile (cron, 2 dk) `/api/domains/nginx` uç noktasından okunup pet server
+   bloğuna eklenir.
+4. **SSL**: Cloudflare for SaaS. `CF_API_TOKEN` + `CF_ZONE_ID` tanımlıysa doğrulanan alan adı Cloudflare'e
+   “custom hostname” olarak otomatik eklenir ve sertifika otomatik üretilir; tanımlı değilse platform yöneticisi
+   `/yonetim`'de görünen alan adını Cloudflare panelinden elle ekler.
+
+Not: Kök alan adına (`alanadi.com`) çoğu DNS sağlayıcısında CNAME eklenemez; `www` adresini bağlayıp kök
+adresi sağlayıcının yönlendirme özelliğiyle `www`'ye yönlendirmek önerilir.
 
 ## Geliştirme
 
@@ -73,6 +91,5 @@ mevcut sertifika yeterli).
 - **Trendyol Go / Getir entegrasyonu**: mağazanın kendi hesabını yetkilendirip fiyat/stok gönderme ve
   oradaki siparişleri panelde görme. Veri modeli kanal bazlı fiyata uygun; API dokümanları ve test
   hesapları gerekli.
-- Mağazaya özel alan adı (ör. `patilerpetshop.com`) — `proxy.ts` ile host → mağaza eşlemesi.
 - Mama bitiş hatırlatması (SMS/WhatsApp), müşteri hesapları, raporlar (kâr, en çok satan, ölü stok).
 - Sanal POS'unu bağlamak isteyen mağazalar için kendi iyzico/PayTR anahtarlarıyla online ödeme.

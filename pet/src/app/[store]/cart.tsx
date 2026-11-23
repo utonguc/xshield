@@ -7,6 +7,7 @@ export type CartItem = { variantId: string; qty: number; name: string; unit: "ad
 
 type CartCtx = {
   slug: string;
+  base: string;
   items: CartItem[];
   ready: boolean;
   add: (item: CartItem) => void;
@@ -30,7 +31,7 @@ function load(slug: string): CartItem[] {
   }
 }
 
-export function CartProvider({ slug, children }: { slug: string; children: React.ReactNode }) {
+export function CartProvider({ slug, base, children }: { slug: string; base: string; children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [ready, setReady] = useState(false);
 
@@ -59,6 +60,7 @@ export function CartProvider({ slug, children }: { slug: string; children: React
   const value = useMemo<CartCtx>(
     () => ({
       slug,
+      base,
       items,
       ready,
       count: items.reduce((s, i) => s + (i.unit === "kg" ? 1 : i.qty), 0),
@@ -70,7 +72,7 @@ export function CartProvider({ slug, children }: { slug: string; children: React
       remove: (id) => persist(items.filter((x) => x.variantId !== id)),
       clear: () => persist([]),
     }),
-    [slug, items, ready, persist],
+    [slug, base, items, ready, persist],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -83,9 +85,9 @@ export function useCart() {
 }
 
 export function CartButton() {
-  const { slug, count } = useCart();
+  const { base, count } = useCart();
   return (
-    <Link href={`/${slug}/sepet`} className="relative inline-flex items-center gap-2 rounded-xl bg-ink px-3.5 py-2 text-sm font-semibold text-white hover:bg-stone-800">
+    <Link href={`${base}/sepet`} className="relative inline-flex items-center gap-2 rounded-xl bg-ink px-3.5 py-2 text-sm font-semibold text-white hover:bg-stone-800">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-5" aria-hidden>
         <path d="M6 6h15l-1.5 9h-12L6 6Zm0 0L5 3H2m6 18a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm10 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" strokeLinecap="round" strokeLinejoin="round" />
       </svg>

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { deliveryZones, legalPages, orders, products, stockBatches, variants } from "@/db/schema";
 import { Stat } from "@/components/page-header";
 import { requireMember } from "@/lib/auth";
+import { getStoreUrl } from "@/lib/tenant";
 import { formatDate, formatDateTime, formatQty, formatTL } from "@/lib/format";
 import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE } from "@/lib/labels";
 
@@ -13,6 +14,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/panel"
   const me = await requireMember();
   const t = me.tenant.id;
   const welcome = (await searchParams).hosgeldin === "1";
+  const storeUrl = await getStoreUrl(t, me.tenant.slug);
 
   const [[today], [month], active, lowStock, expiring, [setup]] = await Promise.all([
     db
@@ -100,8 +102,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/panel"
             <h2 className="font-semibold text-brand-900">Mağazanızı hazırlayın</h2>
             <p className="text-sm text-brand-800">
               Mağaza adresiniz:{" "}
-              <Link href={`/${me.tenant.slug}`} target="_blank" className="font-semibold underline">
-                pet.xshield.com.tr/{me.tenant.slug}
+              <Link href={storeUrl.href} target="_blank" className="font-semibold underline">
+                {storeUrl.label}
               </Link>
             </p>
           </div>

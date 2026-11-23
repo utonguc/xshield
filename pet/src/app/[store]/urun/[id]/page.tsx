@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PawIcon } from "@/components/logo";
 import { PET_TYPE_LABELS } from "@/lib/labels";
 import { getCatalog, getStoreProduct } from "@/lib/storefront";
-import { getStoreBySlug } from "@/lib/tenant";
+import { getStoreBase, getStoreBySlug } from "@/lib/tenant";
 import { imageUrl } from "@/lib/uploads";
 import { ProductCard } from "../../product-card";
 import { VariantSelect } from "./variant-select";
@@ -27,19 +27,19 @@ export default async function ProductPage({ params }: PageProps<"/[store]/urun/[
   if (!store) notFound();
   const p = await getStoreProduct(store.id, id);
   if (!p) notFound();
-  const base = `/${store.slug}`;
+  const base = await getStoreBase(store.slug);
   const related = (await getCatalog(store.id, { categoryId: p.categoryId, limit: 9 })).filter((x) => x.id !== p.id).slice(0, 4);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
       <nav className="mb-4 text-sm text-stone-500">
-        <Link href={base} className="hover:underline">
+        <Link href={base || "/"} className="hover:underline">
           Ana sayfa
         </Link>
         {p.category && (
           <>
             {" / "}
-            <Link href={`${base}?kategori=${p.categorySlug}`} className="hover:underline">
+            <Link href={`${base || "/"}?kategori=${p.categorySlug}`} className="hover:underline">
               {p.category}
             </Link>
           </>

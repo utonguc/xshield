@@ -12,6 +12,9 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
         <Link href="/panel/ayarlar/yasal" className="-mb-px border-b-2 border-transparent pb-2 text-stone-600 hover:text-ink">
           Yasal metinler
         </Link>
+        <Link href="/panel/ayarlar/alan-adi" className="-mb-px border-b-2 border-transparent pb-2 text-stone-600 hover:text-ink">
+          Alan adı
+        </Link>
       </nav>
       {children}
     </div>

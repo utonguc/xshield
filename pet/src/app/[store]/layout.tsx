@@ -5,7 +5,7 @@ import { PawIcon } from "@/components/logo";
 import { displayPhone, whatsappLink } from "@/lib/format";
 import { LEGAL_LABELS } from "@/lib/labels";
 import { getLegalKinds } from "@/lib/storefront";
-import { getStoreBySlug } from "@/lib/tenant";
+import { getStoreBase, getStoreBySlug } from "@/lib/tenant";
 import { imageUrl } from "@/lib/uploads";
 import { CartButton, CartProvider } from "./cart";
 
@@ -34,14 +34,14 @@ export default async function StoreLayout({ children, params }: LayoutProps<"/[s
     );
 
   const legal = await getLegalKinds(store.id);
-  const base = `/${store.slug}`;
+  const base = await getStoreBase(store.slug);
 
   return (
-    <CartProvider slug={store.slug}>
+    <CartProvider slug={store.slug} base={base}>
       <div className="flex min-h-dvh flex-col bg-paper">
         <header className="sticky top-0 z-30 border-b border-stone-200/70 bg-paper/90 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-            <Link href={base} className="flex min-w-0 items-center gap-2.5">
+            <Link href={base || "/"} className="flex min-w-0 items-center gap-2.5">
               {store.logoPath ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageUrl(store.logoPath)!} alt="" className="size-10 rounded-xl object-cover ring-1 ring-stone-200" />
@@ -55,7 +55,7 @@ export default async function StoreLayout({ children, params }: LayoutProps<"/[s
                 {(store.district || store.city) && <span className="block truncate text-xs text-stone-500">{[store.district, store.city].filter(Boolean).join(", ")}</span>}
               </span>
             </Link>
-            <form action={base} className="ml-auto hidden max-w-sm flex-1 md:block">
+            <form action={base || "/"} className="ml-auto hidden max-w-sm flex-1 md:block">
               <input name="q" placeholder="Mama, kum, tasma ara…" className="input bg-white" aria-label="Ürün ara" />
             </form>
             <div className="ml-auto flex items-center gap-2 md:ml-0">
@@ -113,9 +113,9 @@ export default async function StoreLayout({ children, params }: LayoutProps<"/[s
             </div>
           </div>
           <p className="border-t border-stone-100 py-4 text-center text-xs text-stone-400">
-            <Link href="/" className="hover:text-stone-600">
+            <a href={process.env.APP_URL ?? "/"} className="hover:text-stone-600">
               xShield Pet
-            </Link>{" "}
+            </a>{" "}
             altyapısıyla
           </p>
         </footer>

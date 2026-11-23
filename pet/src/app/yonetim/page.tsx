@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { orders, products, tenants } from "@/db/schema";
+import { orders, products, tenantDomains, tenants } from "@/db/schema";
 import { Logo } from "@/components/logo";
 import { Stat } from "@/components/page-header";
 import { getSession, isPlatformAdmin } from "@/lib/auth";
@@ -44,6 +44,7 @@ export default async function AdminPage() {
       products: sql<number>`(select count(*) from ${products} where ${products.tenantId} = ${tenants.id})::int`,
       orders30: sql<number>`(select count(*) from ${orders} where ${orders.tenantId} = ${tenants.id} and ${orders.status} <> 'cancelled' and ${orders.createdAt} > now() - interval '30 days')::int`,
       online30: sql<number>`(select count(*) from ${orders} where ${orders.tenantId} = ${tenants.id} and ${orders.channel} = 'online' and ${orders.status} <> 'cancelled' and ${orders.createdAt} > now() - interval '30 days')::int`,
+      domains: sql<string | null>`(select string_agg(${tenantDomains.domain} || case when ${tenantDomains.status} = 'pending' then ' (bekliyor)' else '' end, ', ') from ${tenantDomains} where ${tenantDomains.tenantId} = ${tenants.id})`,
       gmv30: sql<string>`(select coalesce(sum(${orders.total}), 0) from ${orders} where ${orders.tenantId} = ${tenants.id} and ${orders.status} <> 'cancelled' and ${orders.createdAt} > now() - interval '30 days')`,
     })
     .from(tenants)
@@ -84,6 +85,7 @@ export default async function AdminPage() {
                   <span className="block text-xs text-stone-500">
                     /{r.slug} · {displayPhone(r.phone)} · {formatDate(r.createdAt)}
                   </span>
+                  {r.domains && <span className="block text-xs text-brand-700">🌐 {r.domains}</span>}
                 </td>
                 <td className="hidden text-stone-600 md:table-cell">{[r.district, r.city].filter(Boolean).join(", ") || "—"}</td>
                 <td className="text-right tabular-nums">{r.products}</td>

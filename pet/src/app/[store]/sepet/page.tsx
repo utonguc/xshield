@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { PaymentMethod } from "@/db/schema";
 import { getLegalKinds, getZones } from "@/lib/storefront";
-import { getStoreBySlug } from "@/lib/tenant";
+import { getStoreBase, getStoreBySlug } from "@/lib/tenant";
 import { Checkout } from "./checkout";
 
 export const metadata: Metadata = { title: "Sepet", robots: { index: false } };
@@ -22,6 +22,7 @@ export default async function CartPage({ params }: PageProps<"/[store]/sepet">) 
       <Checkout
         cfg={{
           slug: store.slug,
+          base: await getStoreBase(store.slug),
           acceptingOrders: store.acceptingOrders,
           deliveryEnabled: store.deliveryEnabled,
           pickupEnabled: store.pickupEnabled,

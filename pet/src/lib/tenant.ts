@@ -1,9 +1,11 @@
 import "server-only";
+import { headers } from "next/headers";
 import { connection } from "next/server";
 import { cache } from "react";
-import { eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { tenants } from "@/db/schema";
+import { tenantDomains, tenants } from "@/db/schema";
+import { CUSTOM_DOMAIN_HEADER } from "./platform";
 
 /** Mağaza adresi olarak kullanılamayacak yollar (uygulamanın kendi sayfaları). */
 export const RESERVED_SLUGS = new Set([
@@ -32,3 +34,24 @@ export const getStoreBySlug = cache(async (slug: string) => {
 });
 
 export type Store = NonNullable<Awaited<ReturnType<typeof getStoreBySlug>>>;
+
+/**
+ * Vitrin bağlantılarının öneki: mağaza kendi alan adından açıldıysa "" (www.dukkan.com/urun/1),
+ * platformdan açıldıysa "/slug" (pet.xshield.com.tr/slug/urun/1).
+ */
+export async function getStoreBase(slug: string) {
+  return (await headers()).get(CUSTOM_DOMAIN_HEADER) ? "" : `/${slug}`;
+}
+
+/** Mağazanın herkese açık adresi: doğrulanmış kendi alan adı varsa o, yoksa platform adresi. */
+export async function getStoreUrl(tenantId: string, slug: string) {
+  const [d] = await db
+    .select({ domain: tenantDomains.domain })
+    .from(tenantDomains)
+    .where(and(eq(tenantDomains.tenantId, tenantId), inArray(tenantDomains.status, ["verified", "active"])))
+    .orderBy(asc(tenantDomains.createdAt))
+    .limit(1);
+  if (d) return { href: `https://${d.domain}`, label: d.domain };
+  const app = (process.env.APP_URL ?? "https://pet.xshield.com.tr").replace(/\/$/, "");
+  return { href: `/${slug}`, label: `${app.replace(/^https?:\/\//, "")}/${slug}` };
+}

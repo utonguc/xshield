@@ -13,6 +13,8 @@ import { useCart } from "../cart";
 
 export type CheckoutConfig = {
   slug: string;
+  /** Bağlantı öneki: platformda "/slug", mağazanın kendi alan adında "". */
+  base: string;
   acceptingOrders: boolean;
   deliveryEnabled: boolean;
   pickupEnabled: boolean;
@@ -74,7 +76,7 @@ export function Checkout({ cfg }: { cfg: CheckoutConfig }) {
       <div className="flex flex-col items-center py-16 text-center">
         <PawIcon className="size-16 text-stone-300" />
         <p className="mt-4 text-lg font-semibold">Sepetiniz boş</p>
-        <Link href={`/${cfg.slug}`} className="btn-primary mt-6">
+        <Link href={cfg.base || "/"} className="btn-primary mt-6">
           Alışverişe başla
         </Link>
       </div>
@@ -99,7 +101,7 @@ export function Checkout({ cfg }: { cfg: CheckoutConfig }) {
       });
       if (r.ok) {
         cart.clear();
-        router.push(`/${cfg.slug}/siparis/${r.code}`);
+        router.push(`${cfg.base}/siparis/${r.code}`);
       } else {
         setError(r.error);
         quoteCartAction(cfg.slug, cart.items.map((i) => i.variantId)).then((rows) => setQuotes(new Map(rows.map((x) => [x.id, x]))));
@@ -277,14 +279,14 @@ export function Checkout({ cfg }: { cfg: CheckoutConfig }) {
             <span>
               {cfg.legal.includes("on-bilgilendirme") && (
                 <>
-                  <Link href={`/${cfg.slug}/sayfa/on-bilgilendirme`} target="_blank" className="underline">
+                  <Link href={`${cfg.base}/sayfa/on-bilgilendirme`} target="_blank" className="underline">
                     Ön Bilgilendirme Formu
                   </Link>
                   {cfg.legal.includes("mesafeli-satis") && " ve "}
                 </>
               )}
               {cfg.legal.includes("mesafeli-satis") && (
-                <Link href={`/${cfg.slug}/sayfa/mesafeli-satis`} target="_blank" className="underline">
+                <Link href={`${cfg.base}/sayfa/mesafeli-satis`} target="_blank" className="underline">
                   Mesafeli Satış Sözleşmesi
                 </Link>
               )}
@@ -295,7 +297,7 @@ export function Checkout({ cfg }: { cfg: CheckoutConfig }) {
         {cfg.legal.includes("kvkk") && (
           <p className="text-xs text-stone-500">
             Kişisel verileriniz{" "}
-            <Link href={`/${cfg.slug}/sayfa/kvkk`} target="_blank" className="underline">
+            <Link href={`${cfg.base}/sayfa/kvkk`} target="_blank" className="underline">
               KVKK Aydınlatma Metni
             </Link>{" "}
             kapsamında işlenir.

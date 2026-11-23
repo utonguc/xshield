@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { deliveryZones, orderItems, orders, type OrderStatus } from "@/db/schema";
 import { formatDateTime, formatQty, formatTL, whatsappLink } from "@/lib/format";
 import { ORDER_STATUS_LABELS, PAYMENT_LABELS } from "@/lib/labels";
-import { getStoreBySlug } from "@/lib/tenant";
+import { getStoreBase, getStoreBySlug } from "@/lib/tenant";
 import { AutoRefresh } from "@/app/panel/siparisler/auto-refresh";
 
 export const metadata: Metadata = { title: "Sipariş takibi", robots: { index: false } };
@@ -24,6 +24,7 @@ export default async function OrderTrackingPage({ params }: PageProps<"/[store]/
   if (!row) notFound();
   const o = row.o;
   const items = await db.select().from(orderItems).where(eq(orderItems.orderId, o.id));
+  const base = await getStoreBase(store.slug);
 
   const steps: OrderStatus[] = o.fulfillment === "pickup" ? ["new", "preparing", "ready", "delivered"] : ["new", "preparing", "on_the_way", "delivered"];
   const stepLabels: Partial<Record<OrderStatus, string>> = {
@@ -126,7 +127,7 @@ export default async function OrderTrackingPage({ params }: PageProps<"/[store]/
             Mağazaya WhatsApp’tan yaz
           </a>
         )}
-        <Link href={`/${store.slug}`} className="btn-primary">
+        <Link href={base || "/"} className="btn-primary">
           Alışverişe devam et
         </Link>
       </div>

@@ -60,6 +60,8 @@ export const tenants = pgTable("tenants", {
   taxOffice: text("tax_office"),
   taxNumber: text("tax_number"),
   orderSeq: integer("order_seq").notNull().default(1000),
+  // Kendi alan adını bağlarken DNS TXT kaydına yazılacak doğrulama kodu
+  domainToken: text("domain_token"),
   createdAt: ts("created_at").notNull().defaultNow(),
 });
 
@@ -356,4 +358,31 @@ export const legalPages = pgTable(
     updatedAt: ts("updated_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.tenantId, t.kind] })],
+);
+
+// ── Mağazaya özel alan adları ───────────────────────────────────────────────
+
+export const DOMAIN_STATUSES = ["pending", "verified", "active", "error"] as const;
+export type DomainStatus = (typeof DOMAIN_STATUSES)[number];
+
+/**
+ * Mağazanın kendi alan adı (ör. www.patilerpetshop.com). DNS TXT kaydıyla sahiplik
+ * doğrulanınca (verified) proxy.ts bu adresten gelen istekleri mağazanın vitrinine yönlendirir.
+ * Cloudflare for SaaS yapılandırılmışsa SSL sertifikası durumu cf_* alanlarında izlenir.
+ */
+export const tenantDomains = pgTable(
+  "tenant_domains",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+    domain: text("domain").notNull().unique(),
+    status: text("status", { enum: DOMAIN_STATUSES }).notNull().default("pending"),
+    verifiedAt: ts("verified_at"),
+    lastCheckedAt: ts("last_checked_at"),
+    lastError: text("last_error"),
+    cfHostnameId: text("cf_hostname_id"),
+    sslStatus: text("ssl_status"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("tenant_domains_tenant_idx").on(t.tenantId)],
 );
