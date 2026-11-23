@@ -21,6 +21,7 @@
 - **xSignage** (https://signage.xshield.com.tr) — Dijital tabela (digital signage) yönetim platformu.
 - **Pekiyi** (https://pekiyi.net) — Okullar için kurumsal yönetim platformu: öğrenci işleri, sınav/transkript, muhasebe, rehberlik.
 - **goX** (https://gox.xshield.com.tr) — Misafir Wi-Fi karşılama ve yönetim platformu (captive portal).
+- **xShield Pet** (https://pet.xshield.com.tr) — Petshoplar için online mağaza, barkodlu kasa, stok ve son kullanma tarihi takibi, kendi kuryesiyle teslimat.
 
 ## Süreç
 

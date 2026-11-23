@@ -24,7 +24,10 @@ export default function ProductsShowcase() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.6, delay: i * 0.08, ease: "easeOut" }}
-              className="panel overflow-hidden flex flex-col"
+              // Son satırda tek kart kalırsa ortala (3 sütunlu ızgara)
+              className={`panel overflow-hidden flex flex-col${
+                products.length % 3 === 1 && i === products.length - 1 ? " md:col-start-2" : ""
+              }`}
             >
               <div className="h-1.5" style={{ background: p.color }} />
               <div className="p-7 flex flex-col flex-1">

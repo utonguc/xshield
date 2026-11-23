@@ -130,6 +130,7 @@ export default function Contact() {
                     <option>xSignage</option>
                     <option>Pekiyi</option>
                     <option>goX</option>
+                    <option>xShield Pet</option>
                     <option>Diğer</option>
                   </select>
                 </div>

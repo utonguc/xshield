@@ -161,6 +161,23 @@ export const products = [
     colorRgb: "107,122,0",
     url: "https://gox.xshield.com.tr",
   },
+  {
+    name: "xShield Pet",
+    tagline: "Petshoplar için Online Mağaza, Kasa ve Stok",
+    badge: "Yeni",
+    desc: "Mahalle petshopunun tüm satışı tek sistemde: rafındaki ürünler internette satılır, kasada okutulan stoktan düşer, mama son kullanma tarihleri takip edilir, sipariş kendi kuryesiyle kapıya gider.",
+    features: [
+      { icon: "🛒", text: "Hazır Online Mağaza" },
+      { icon: "🔖", text: "Barkodlu Kasa" },
+      { icon: "📦", text: "Stok & SKT Takibi" },
+      { icon: "🛵", text: "Kendi Kuryesiyle Teslimat" },
+      { icon: "🌐", text: "Kendi Alan Adı" },
+      { icon: "👥", text: "Personel & Kurye Hesapları" },
+    ],
+    color: "#1f5f8b",
+    colorRgb: "31,95,139",
+    url: "https://pet.xshield.com.tr",
+  },
 ];
 
 // ── Danışmanlık süreci yol haritası: anlaşma öncesinden bakım sonrasına ────

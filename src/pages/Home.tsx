@@ -17,7 +17,7 @@ import Footer from "../components/Footer";
 export default function Home() {
   useDocumentMeta(
     "xShield | Bulut, Ağ, Siber Güvenlik & IT Çözümleri",
-    "xShield; Cloud sunucu, ağ yönetimi, siber güvenlik, altyapı hizmetleri ve yazılım danışmanlığı alanlarında kurumsal çözümler sunan teknoloji firmasıdır. e-Clinic, Signed, xCut, xSignage, Pekiyi ve goX ürünleriyle işletmenizi dijitale taşıyın.",
+    "xShield; Cloud sunucu, ağ yönetimi, siber güvenlik, altyapı hizmetleri ve yazılım danışmanlığı alanlarında kurumsal çözümler sunan teknoloji firmasıdır. e-Clinic, Signed, xCut, xSignage, Pekiyi, goX ve xShield Pet ürünleriyle işletmenizi dijitale taşıyın.",
   );
 
   return (
